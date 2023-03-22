@@ -1,6 +1,6 @@
 """RSNL is a software package for robust simulation-based inference."""
 
-from rsnl.inference import * # TODO: Placeholder
+# from rsnl.inference import * # TODO: Placeholder
 
 __author__ = 'Ryan Kelly'
 __email__ = 'ryan@kiiii.com'
