@@ -1,4 +1,4 @@
-"""Run contaminated normal example."""
+"""Run misspec MA(1) example."""
 
 import jax.numpy as jnp
 
@@ -7,21 +7,23 @@ import arviz as az  # type: ignore
 import os
 import pickle as pkl
 from rsnl.inference import run_rsnl
-from rsnl.examples.misspec_ma1 import (get_model, assumed_dgp,
-                                       summ_stats)
+from rsnl.examples.misspec_ma1 import (get_prior, assumed_dgp,
+                                       calculate_summary_statistics)
 from rsnl.visualisations import plot_and_save_all
+from rsnl.model import get_robust_model
 
 
 def run_misspec_ma1_inference():
     """Script to run the full inference task on misspec MA(1) example."""
-    model = get_model()
+    model = get_robust_model
+    prior = get_prior()
     rng_key = random.PRNGKey(0)
     sim_fn = assumed_dgp
-    sum_fn = summ_stats
+    sum_fn = calculate_summary_statistics
     pseudo_true_param = jnp.array([0.0])
     # x_obs = true_dgp(true_params)
     x_obs = jnp.array([0.01, 0])
-    mcmc = run_rsnl(model, sim_fn, sum_fn, rng_key, x_obs, pseudo_true_param)
+    mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs, pseudo_true_param)
     mcmc.print_summary()
     folder_name = "vis/rsnl_misspec_ma1"  # + str(stdev_err)
     isExist = os.path.exists(folder_name)

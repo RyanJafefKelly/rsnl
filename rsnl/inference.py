@@ -1,8 +1,9 @@
 """Inference (well sampling) methods for RSNL."""
 
-from typing import Callable
+from typing import Callable, Optional
 import jax.numpy as jnp
 import jax.random as random
+import numpyro.distributions as dist  # type: ignore
 from jax._src.prng import PRNGKeyArray  # for typing
 from numpyro.infer import MCMC, NUTS  # type: ignore
 from flowjax.flows import CouplingFlow  # type: ignore
@@ -10,16 +11,17 @@ from flowjax.bijections import RationalQuadraticSpline  # type: ignore
 from flowjax.distributions import StandardNormal  # type: ignore
 from flowjax.train.data_fit import fit_to_data  # type: ignore
 
-from .utils import vmap_dgp
+from .utils import vmap_dgp #, lame_vmap
 
 
 def run_rsnl(
     model: Callable,
+    prior: dist.Distribution,
     sim_fn: Callable,
     sum_fn: Callable,
     rng_key: PRNGKeyArray,
     x_obs: jnp.ndarray,
-    true_param: jnp.ndarray,
+    true_param: Optional[jnp.ndarray] = None,
 ) -> MCMC:
     """
     An RSNL sampler for models with adjustment parameters.
@@ -28,6 +30,8 @@ def run_rsnl(
     ----------
     model : Callable
         The target model for which the RSNL sampler will be run.
+    prior : dist.Distribution
+        The prior distribution for the model parameters.
     sim_fn : Callable
         The DGP function given the model parameters.
     sum_fn : Callable
@@ -36,8 +40,8 @@ def run_rsnl(
         The random number generator key.
     x_obs : jnp.ndarray
         The observed data for which the model will be fit.
-    true_param : jnp.ndarray
-        The true parameters of the model, used for initialization.
+    true_param : jnp.ndarray, optional
+        The true parameters of the model, used for reference if available.
 
     Returns
     -------
@@ -46,14 +50,14 @@ def run_rsnl(
     """
     # hyperparameters
     # TODO: different approach than hardcode
-    num_rounds = 5
-    num_sims_per_round = 1000
+    num_rounds = 3
+    num_sims_per_round = 500  # NOTE: CHANGED FOR TESTING
     num_final_posterior_samples = 10_000
     thinning = 10
     num_warmup = 1000
     num_chains = 1
     summary_dims = len(x_obs)
-    theta_dims = len(true_param)
+    theta_dims = len(true_param)  # TODO! BETTER WAY TO DO THIS
 
     x_sims_all = jnp.empty((0, summary_dims))
     thetas_all = jnp.empty((0, theta_dims))
@@ -61,7 +65,7 @@ def run_rsnl(
     flow = None
 
     init_params = {
-        'theta': jnp.repeat(true_param, num_chains).reshape(num_chains, -1),
+        'theta': jnp.repeat(true_param, num_chains).reshape(num_chains, -1),  # TODO! BETTER WAY TO DO THIS
         'adj_params': jnp.repeat(
                                 jnp.zeros(summary_dims),
                                 num_chains
@@ -86,8 +90,10 @@ def run_rsnl(
                     num_chains=num_chains)
         rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
         laplace_var = 0.3 * jnp.abs(x_obs_standard)  # TODO: In testing..
-
+        if i == 0:  # TODO! VERIFY
+            laplace_var = None
         mcmc.run(sub_key1, x_obs_standard,
+                 prior,
                  flow=flow,
                  laplace_var=laplace_var,
                  standardisation_params=standardisation_params,
@@ -105,11 +111,24 @@ def run_rsnl(
         thetas = mcmc.get_samples()['theta']
 
         sim_keys = random.split(rng_key, len(thetas))
-        vmap_dgp_fn = vmap_dgp(sim_fn, sum_fn)
-        x_sims = jnp.squeeze(vmap_dgp_fn(thetas, sim_keys))
+
+        # TODO! VERY LAME FIX
+        x_sims = jnp.empty((0, summary_dims))
+        valid_idx = []
+        for ii, theta in enumerate(thetas):
+            if ii % 50 == 0:
+                print('ii: ', ii)
+            x_sim = sum_fn(sim_fn(sim_keys[ii], *theta))
+            if x_sim is not None:  # TODO? smoother approach
+                x_sims = jnp.append(x_sims, x_sim.reshape(-1, summary_dims), axis=0)
+                valid_idx.append(ii)
+
+
+        # vmap_dgp_fn = lame_vmap(sim_fn, sum_fn)
+        # x_sims = jnp.squeeze(vmap_dgp_fn(thetas, sim_keys))
 
         x_sims_all = jnp.append(x_sims_all, x_sims.reshape(-1, summary_dims), axis=0)
-        thetas_all = jnp.append(thetas_all, thetas.reshape(-1, theta_dims), axis=0)
+        thetas_all = jnp.append(thetas_all, thetas.reshape(-1, theta_dims)[valid_idx, :], axis=0)
 
         # standardise simulated summaries
         standardisation_params['x_sims_mean'] = jnp.mean(x_sims_all, axis=0)
@@ -157,7 +176,7 @@ def run_rsnl(
                 num_chains=num_chains)  # TODO: MAKING NUMBERS UP
     rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
     laplace_var = 0.3 * jnp.abs(x_obs_standard)
-    mcmc.run(sub_key1, x_obs_standard, flow=flow, standardisation_params=standardisation_params,
+    mcmc.run(sub_key1, x_obs_standard, prior, flow=flow, standardisation_params=standardisation_params,
              laplace_var=laplace_var,
              init_params=init_params,
              )

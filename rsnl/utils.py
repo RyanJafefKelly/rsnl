@@ -22,15 +22,34 @@ class FlowNumpyro(dist):
         return ll
 
 
+# def lame_vmap(sim_fn, sum_fn):
+#     """vmap..."""
+#     def simulation_wrapper(params, keys=None):
+#         for key in keys:
+#             x_sim = sim_fn(key, *params)
+#             sim_sum = sum_fn(x_sim)
+#         return sim_sum
+
+#     # TODO! ADD JIT BACK
+#     # @jit
+#     def generate_simulations(theta, key):
+#         x_sim = simulation_wrapper(theta, key=key)
+#         return x_sim
+
+#     # generate_simulations_vmap = map(generate_simulations, in_axes=(0, 0))
+#     return generate_simulations
+
+
 def vmap_dgp(sim_fn, sum_fn):
+    # TODO: remove batch size ... consequences?
     """vmap..."""
-    @partial(jit, static_argnums=(1))
-    def simulation_wrapper(params, batch_size=1, key=None):
-        x_sim = sim_fn(params, batch_size=batch_size, key=key)
+    def simulation_wrapper(params, key=None):
+        x_sim = sim_fn(key, *params)
         sim_sum = sum_fn(x_sim)
         return sim_sum
 
-    @jit
+    # TODO! ADD JIT BACK
+    # @jit
     def generate_simulations(theta, key):
         x_sim = simulation_wrapper(theta, key=key)
         return x_sim

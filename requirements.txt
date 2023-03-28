@@ -5,3 +5,4 @@ equinox<=0.9.0
 matplotlib>=3.3.4
 arviz>=0.11.2
 latex>=0.7.0
+diffrax>=0.0.1
