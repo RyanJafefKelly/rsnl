@@ -3,6 +3,7 @@
 import jax.numpy as jnp
 
 from jax import random
+import argparse
 import arviz as az  # type: ignore
 import os
 import pickle as pkl
@@ -13,11 +14,14 @@ from rsnl.visualisations import plot_and_save_all
 from rsnl.model import get_robust_model
 
 
-def run_misspec_ma1_inference():
+def run_misspec_ma1_inference(args):
     """Script to run the full inference task on misspec MA(1) example."""
+    seed = args.seed
+    folder_name = "res/rsnl_misspec_ma1_seed_{}".format(seed)
+
     model = get_robust_model
     prior = get_prior()
-    rng_key = random.PRNGKey(0)
+    rng_key = random.PRNGKey(seed)
     sim_fn = assumed_dgp
     sum_fn = calculate_summary_statistics
     pseudo_true_param = jnp.array([0.0])
@@ -26,22 +30,29 @@ def run_misspec_ma1_inference():
     mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                           pseudo_true_param)
     mcmc.print_summary()
-    folder_name = "vis/rsnl_misspec_ma1"  # + str(stdev_err)
     isExist = os.path.exists(folder_name)
     if not isExist:
         os.makedirs(folder_name)
     inference_data = az.from_numpyro(mcmc)
 
-    with open('rsnl_misspec_ma1_thetas.pkl', 'wb') as f:
+    with open(f'{folder_name}_thetas.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.theta, f)
 
-    with open('rsnl_misspec_ma1_adj_params.pkl', 'wb') as f:
+    with open(f'{folder_name}_adj_params.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.adj_params, f)
 
     # TODO: INCLUDE FILENAME
-    plot_and_save_all(inference_data, pseudo_true_param)
+    plot_and_save_all(inference_data, pseudo_true_param,
+                      folder_name=folder_name)
 
 
 if __name__ == '__main__':
-    # TODO: allow args e.g. name for filenames
-    run_misspec_ma1_inference()
+    parser = argparse.ArgumentParser(
+        prog='run_misspec_ma1.py',
+        description='Run inference on misspecified MA(1) example.',
+        epilog='Example: python run_misspec_ma1.py'
+        )
+    parser.add_argument('--seed', type=int, default=0)
+    args = parser.parse_args()
+
+    run_misspec_ma1_inference(args)

@@ -17,12 +17,12 @@ def log_prob_at_true_param(x_obs, true_param, prior, flow):
     # TODO: at true param calc. flow and prior
 
 
-def plot_and_save_coverage(empirical_coverage):
+def plot_and_save_coverage(empirical_coverage, folder_name=""):
     """Plot coverage."""
     # TODO! MAKE PAPER WORTHY.
     plt.plot([0, 1], [0, 1])
     plt.plot(empirical_coverage)
-    plt.savefig("empirical_coverage.png")
+    plt.savefig("{folder_name}_empirical_coverage.png")
 
 
 def get_true_posterior_draws(posterior, num_draws):
@@ -67,10 +67,11 @@ def calculate_coverage(x_obs, thetas, prior, flow, true_posterior):
 
 
 # TODO: coverage?
-def calculate_metrics(x_obs, inference_data, prior, flow, true_posterior):
+def calculate_metrics(x_obs, inference_data, prior, flow, true_posterior,
+                      folder_name=""):
     thetas = jnp.concatenate(inference_data.posterior.theta.values, axis=0)
     empirical_coverage = calculate_coverage(x_obs, thetas, prior, flow,
                                             true_posterior)
-    plot_and_save_coverage(empirical_coverage)
+    plot_and_save_coverage(empirical_coverage, folder_name)
 
     pass

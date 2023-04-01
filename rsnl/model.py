@@ -1,14 +1,14 @@
 """Numpyro model funcs."""
 from typing import Optional
 import jax.numpy as jnp
-import numpyro
+import numpyro  # type: ignore
 import numpyro.distributions as dist  # type: ignore
 
 from rsnl.utils import FlowNumpyro
 
+# TODO: INCLUDE NORMAL MODEL FOR SNL COMPARISON
 
-# TODO: check legit...
-# TODO: also... standardisation_params typing
+
 def get_robust_model(x_obs: jnp.ndarray,
                      prior: dist.Distribution,
                      flow: Optional[FlowNumpyro] = None,

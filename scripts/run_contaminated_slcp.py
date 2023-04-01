@@ -4,6 +4,7 @@ import jax.numpy as jnp
 
 from jax import random
 import arviz as az  # type: ignore
+import argparse
 import os
 import pickle as pkl
 import arviz as az  # TODO: testing
@@ -18,12 +19,14 @@ from rsnl.visualisations import plot_and_save_all, plot_theta_posterior
 from rsnl.model import get_robust_model
 
 
-def run_contaminated_slcp_inference():
+def run_contaminated_slcp_inference(args):
     """Script to run the full inference task on contaminated SLCP example."""
-    # print(jax.local_device_count())
+    seed = args.seed
+    folder_name = "res/contaminated_slcp/seed_{}/".format(seed)
+
     model = get_robust_model
     prior = get_prior()
-    rng_key = random.PRNGKey(0)
+    rng_key = random.PRNGKey(seed)
     sim_fn = assumed_dgp
     summ_fn = calculate_summary_statistics
     true_params = jnp.array([0.7, -2.9, -1.0, -0.9, 0.6])
@@ -40,23 +43,31 @@ def run_contaminated_slcp_inference():
     mcmc, flow = run_rsnl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
                           true_params)
     mcmc.print_summary()
-    folder_name = "vis/rsnl_contaminated_slcp"
     isExist = os.path.exists(folder_name)
     if not isExist:
         os.makedirs(folder_name)
     inference_data = az.from_numpyro(mcmc)
 
-    with open('rsnl_contaminated_slcp_thetas.pkl', 'wb') as f:
+    with open(f'{folder_name}_theta.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.theta, f)
 
-    with open('rsnl_contaminated_slcp_adj_params.pkl', 'wb') as f:
+    with open(f'{folder_name}_adj_params.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.adj_params, f)
 
-    calculate_metrics(x_obs, inference_data, prior, flow, true_posterior)
+    calculate_metrics(x_obs, inference_data, prior, flow, true_posterior,
+                      folder_name=folder_name)
     # TODO: INCLUDE FILENAME
-    plot_and_save_all(inference_data, true_params)
+    plot_and_save_all(inference_data, true_params,
+                      folder_name=folder_name)
 
 
 if __name__ == '__main__':
-    # TODO: allow args e.g. name for filenames
-    run_contaminated_slcp_inference()
+    parser = argparse.ArgumentParser(
+        prog='run_contaminated_slcp.py',
+        description='Run inference on contaminated SLCP example.',
+        epilog='Example: python run_contaminated_slcp.py'
+        )
+    parser.add_argument('--seed', type=int, default=0)
+    args = parser.parse_args()
+
+    run_contaminated_slcp_inference(args)

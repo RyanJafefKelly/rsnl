@@ -15,7 +15,7 @@ def plot_mcmc(inference_data, folder_name=""):
     plt.savefig(f"{folder_name}_autocorr.png")
 
 
-def plot_theta_posterior(inference_data, reference_values=None):
+def plot_theta_posterior(inference_data, reference_values=None, folder_name=""):
     # TODO: MULTIVARIATE
     # TODO: LOOK NICE
     thetas = inference_data.posterior.theta.values
@@ -54,11 +54,11 @@ def plot_theta_posterior(inference_data, reference_values=None):
                             # figsize=(64, 64)
                             )
 
-    plt.savefig("joint_theta.pdf", bbox_inches='tight')
+    plt.savefig("{folder_name}_joint_theta.pdf", bbox_inches='tight')
     plt.clf()
 
 
-def plot_adj_posterior(inference_data):
+def plot_adj_posterior(inference_data, folder_name=""):
     # plt.rcParams['text.usetex'] = True  # TODO: latex
     plt.rcParams.update({'font.size': 25})
 
@@ -84,11 +84,11 @@ def plot_adj_posterior(inference_data):
         plt.legend(fontsize=20)
         # plt.title("$b_0 = 0.01$")
         plt.show()
-        plt.savefig(f'adj_param{i+1}.pdf', bbox_inches='tight')
+        plt.savefig(f'{folder_name}_adj_param{i+1}.pdf', bbox_inches='tight')
         plt.clf()
 
 
-def plot_and_save_all(inference_data, true_params):
+def plot_and_save_all(inference_data, true_params, folder_name=""):
     theta_plot = {}
     var_name_map = {}
 
@@ -112,6 +112,6 @@ def plot_and_save_all(inference_data, true_params):
         var_name_map[k] = fr'$\{k[:-1]}_{k[-1]}$'
         reference_values[var_name_map[k]] = true_params[ii]  # why does ref_vals match labels and not data? ah well
 
-    plot_theta_posterior(inference_data)
-    plot_adj_posterior(inference_data)
-    plot_mcmc(inference_data)
+    plot_theta_posterior(inference_data, folder_name=folder_name, reference_values=reference_values)
+    plot_adj_posterior(inference_data, folder_name=folder_name)
+    plot_mcmc(inference_data, folder_name=folder_name)
