@@ -6,9 +6,11 @@ from jax import random
 import arviz as az  # type: ignore
 import os
 import pickle as pkl
+from rsnl.metrics import calculate_metrics
 from rsnl.inference import run_rsnl
 from rsnl.examples.contaminated_normal import (get_prior, assumed_dgp,
-                                               calculate_summary_statistics)
+                                               calculate_summary_statistics,
+                                               true_dgp, true_posterior)
 from rsnl.visualisations import plot_and_save_all
 from rsnl.model import get_robust_model
 
@@ -24,7 +26,8 @@ def run_contaminated_normal():
     true_param = jnp.array([1.0])
     # x_obs = true_dgp(true_params)
     x_obs = jnp.array([1.0, 2.0])
-    mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs, true_param)
+    mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
+                          true_param)
     mcmc.print_summary()
     folder_name = "vis/rsnl_contaminated_normal"  # + str(stdev_err)
     isExist = os.path.exists(folder_name)
@@ -39,6 +42,7 @@ def run_contaminated_normal():
         pkl.dump(inference_data.posterior.adj_params, f)
 
     # TODO: INCLUDE FILENAME
+    calculate_metrics(x_obs, inference_data, prior, flow, true_posterior)
     plot_and_save_all(inference_data, true_param)
 
 

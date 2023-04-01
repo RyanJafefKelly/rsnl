@@ -23,7 +23,7 @@ def run_misspec_ma1_inference():
     pseudo_true_param = jnp.array([0.0])
     # x_obs = true_dgp(true_params)
     x_obs = jnp.array([0.01, 0])
-    mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs, pseudo_true_param)
+    mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs, pseudo_true_param)
     mcmc.print_summary()
     folder_name = "vis/rsnl_misspec_ma1"  # + str(stdev_err)
     isExist = os.path.exists(folder_name)

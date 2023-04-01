@@ -12,21 +12,22 @@ from rsnl.utils import FlowNumpyro
 def get_robust_model(x_obs: jnp.ndarray,
                      prior: dist.Distribution,
                      flow: Optional[FlowNumpyro] = None,
-                     laplace_var:  Optional[jnp.ndarray] = None,
+                     scale_adj_var:  Optional[jnp.ndarray] = None,
                      standardisation_params=None) -> jnp.ndarray:
     """Get robust numpyro model."""
     laplace_mean = jnp.zeros(len(x_obs))
-
-    if laplace_var is None:
-        laplace_var = jnp.ones(len(x_obs))
-
+    laplace_var = jnp.ones(len(x_obs))
+    if scale_adj_var is None:
+        scale_adj_var = jnp.ones(len(x_obs))
     theta = numpyro.sample('theta', prior)
     theta_standard = numpyro.deterministic('theta_standard',
                                            (theta - standardisation_params['theta_mean']) / standardisation_params['theta_std'])
 
     adj_params = numpyro.sample('adj_params', dist.Laplace(laplace_mean,
                                                            laplace_var))
-    x_adj = numpyro.deterministic('x_adj', x_obs - adj_params)
+    scaled_adj_params = numpyro.deterministic('adj_params_scaled', adj_params *
+                                              scale_adj_var)
+    x_adj = numpyro.deterministic('x_adj', x_obs - scaled_adj_params)
 
     if flow is not None:  # TODO?
         x_adj_sample = numpyro.sample('x_adj_sample',
@@ -36,8 +37,3 @@ def get_robust_model(x_obs: jnp.ndarray,
         x_adj_sample = x_adj
 
     return x_adj_sample
-
-
-# TODO: goal take a model and return a new model that has adjustment parameters
-def robustify(model, param_names,):
-    pass

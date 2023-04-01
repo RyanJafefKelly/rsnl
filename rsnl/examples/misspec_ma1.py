@@ -33,38 +33,13 @@ def calculate_summary_statistics(x):
     s1 = autocov(x, lag=1)
     return jnp.squeeze(jnp.array([s0, s1]))
 
+
 def get_prior():
     """Return prior for inference on misspec MA(1)"""
     return dist.Uniform(low=-1.0, high=1.0)
 
-# def get_model():
-#     """Return numpyro model for inference on misspec MA(1)"""
-#     def model(x_obs: jnp.ndarray,
-#               flow: Optional[FlowNumpyro] = None,
-#               laplace_var:  Optional[jnp.ndarray] = None,
-#               standardisation_params=None) -> jnp.ndarray:
-#         prior = dist.Uniform(low=-1.0, high=1.0)
 
-#         laplace_mean = jnp.array([0.0, 0.0])
-
-#         if laplace_var is None:
-#             laplace_var = jnp.array([1.0, 1.0])
-
-#         theta = numpyro.sample('theta', prior)
-#         theta_standard = numpyro.deterministic('theta_standard', (theta - standardisation_params['theta_mean']) / standardisation_params['theta_std'])
-
-#         adj_params = numpyro.sample('adj_params', dist.Laplace(laplace_mean,
-#                                                                laplace_var))
-#         x_adj = numpyro.deterministic('x_adj', x_obs - adj_params)
-
-#         if flow is not None:  # TODO?
-#             x_adj_sample = numpyro.sample('x_adj_sample',
-#                                           FlowNumpyro(flow, theta=theta_standard),
-#                                           obs=x_adj)
-#         else:
-#             x_adj_sample = x_adj
-
-#         return x_adj_sample
-
-
-#     return model
+def true_posterior(x_obs: jnp.ndarray,
+                   prior: dist.Distribution) -> jnp.ndarray:
+    """Return true posterior for misspecified MA(1) example."""
+    pass

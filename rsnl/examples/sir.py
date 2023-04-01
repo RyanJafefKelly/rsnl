@@ -6,19 +6,19 @@ import jax.numpy as jnp
 import jax.random as random
 from jax._src.prng import PRNGKeyArray  # for typing
 import numpyro.distributions as dist  # type: ignore
-from diffrax import (diffeqsolve, ControlTerm, Heun, MultiTerm, ODETerm,
+from diffrax import (diffeqsolve, ControlTerm, Euler, EulerHeun, Heun, MultiTerm, ODETerm,
                      SaveAt, VirtualBrownianTree, PIDController)
 import jax.lax as lax
 from numpyro.distributions import constraints
 
 
 def base_dgp(rng_key: PRNGKeyArray,
-             beta: jnp.ndarray,
-             gamma: jnp.ndarray) -> jnp.ndarray:
-    def vector_field(t, y, args):
+             gamma: jnp.ndarray,
+             beta: jnp.ndarray) -> jnp.ndarray:
+    def drift(t, y, args):
         """Deterministic part of SDE."""
         s, i, r, R0 = y
-        beta, gamma, eta, _ = args
+        gamma, beta, eta, _ = args
 
         ds_dt = -beta * s * i
         di_dt = beta * s * i - gamma * i
@@ -39,17 +39,18 @@ def base_dgp(rng_key: PRNGKeyArray,
 
     # stochastic
     brownian_motion = VirtualBrownianTree(t0, t1, tol=1e-3, shape=(), key=rng_key)
-    terms = MultiTerm(ODETerm(vector_field),
+    terms = MultiTerm(ODETerm(drift),
                       ControlTerm(diffusion, brownian_motion))
 
     dt0 = 0.05  # TODO: arbitrarily set ... shouldn't matter w/ controller?
     eta = 0.05
     sigma = 0.05  # scaling factor
-    args = (beta, gamma, eta, sigma)
+    args = (gamma, beta, eta, sigma)  # TODO: SWITCHED GAMMA, BETA AROUND
     R0_init = beta / gamma
+    print(f'beta: {beta}, gamma: {gamma}')
     y0 = jnp.array([.999, 0.001, 0.0, R0_init])  # Init. proportion of S, I, R
 
-    solver = Heun()
+    solver = Heun(scan_stages=True)  # TODO: TRY DIFF SOLVER
     saveat = SaveAt(ts=jnp.linspace(t0, t1, 365))
     stepsize_controller = PIDController(pcoeff=0.1, icoeff=0.3, dcoeff=0,
                                         rtol=1e-3, atol=1e-3)
@@ -62,12 +63,13 @@ def base_dgp(rng_key: PRNGKeyArray,
                           )
     except Exception:
         return None
-    return sol.ys[:, 1]  # only return infection data
+    return 1e+6 * sol.ys[:, 1]  # only return infection data
 
 
 def assumed_dgp(rng_key: PRNGKeyArray,
                 beta: jnp.ndarray,
                 gamma: jnp.ndarray) -> jnp.ndarray:
+    """Assumed DGP for the SIR model."""
     x = base_dgp(rng_key, beta, gamma)
     return x
 
@@ -75,6 +77,7 @@ def assumed_dgp(rng_key: PRNGKeyArray,
 def true_dgp(rng_key: PRNGKeyArray,
              beta: jnp.ndarray,
              gamma: jnp.ndarray) -> jnp.ndarray:
+    """True DGP for the SIR model including weekend reporting lag."""
     x = base_dgp(rng_key, beta, gamma)
     x = weekend_lag(x)
     return x
@@ -150,35 +153,55 @@ def weekend_lag(x, misspecify_multiplier=0.95):
 
 class CustomPrior(dist.Distribution):
     """Uniform with second draw conditioned on first."""
-
+    # NOTE: 
     def __init__(self, low=0.0, high=1.0, validate_args=False):
         self.low, self.high = low, high
+        event_shape = (2,)
+        self._u1 = None
         batch_shape = lax.broadcast_shapes(jnp.shape(low), jnp.shape(high))
         self._support = constraints.interval(low, high)
-        super().__init__(batch_shape, validate_args=validate_args, event_shape=(2,))
+        super().__init__(batch_shape, validate_args=validate_args,
+                         event_shape=event_shape)
 
-    def sample(self, key, sample_shape=()):
+    def sample(self, key, sample_shape=(1,)):
         key, sub_key1 = random.split(key)
         shape = sample_shape + self.batch_shape
         u1 = random.uniform(key, shape=shape, minval=self.low, maxval=self.high)
+        self._u1 = u1
         u2 = random.uniform(sub_key1, shape=shape, minval=u1, maxval=self.high)
         return jnp.concatenate([u1, u2])
 
     def log_prob(self, value):
+        u1, u2 = value[0, ...], value[1, ...]
         # if value.ndim == 1:
         #     value = jnp.expand_dims(value, axis=1)
-        # shape = lax.broadcast_shapes(jnp.shape(value), self.batch_shape)
+        shape = lax.broadcast_shapes(jnp.shape(value), self.batch_shape)
         # assume last column is for t1 t2
-        # p1 = -jnp.broadcast_to(jnp.log(self.high - self.low), shape[1:])
-        # p2 = -jnp.broadcast_to(jnp.log(self.high - value[0, ...]), shape[1:])
-        return 1  # TODO: WHO CARES
 
+        log_pdf_u1 = jnp.where((self.low <= u1) & (u1 <= self.high),
+                        -jnp.log(self.high - self.low), -jnp.inf)
+        log_pdf_u1 = jnp.broadcast_to(log_pdf_u1, shape[1:])
+        log_pdf_u2 = jnp.where((u1 <= u2) & (u2 <= self.high),
+                                -jnp.log(self.high - u1), -jnp.inf)
+        log_pdf_u2 = jnp.broadcast_to(log_pdf_u2, shape[1:])
+        return log_pdf_u1 + log_pdf_u2
+
+    @property
     def mean(self):
         # TODO:
-        return jnp.array([0.25, 0.375])
+        mean = jnp.array([0.25, 0.375])  # default
+        if self._u1 is not None:
+            u2_mean = (self.high + self._u1) / 2
+            mean = jnp.array([0.25, u2_mean])
+        return mean
 
+    @property
     def variance(self):  # TODO
-        var = jnp.sum((1/12) * (np.array([0.5, 0.5]) ** 2))
+        var = (1/12) * (jnp.array([0.5, 0.375]) ** 2)
+        if self._u1 is not None:
+            u1_var = ((self.high - self.low) ** 2) / 12
+            u2_var = ((self.high - self._u1) ** 2) / 12
+            var = jnp.array([u1_var, u2_var])
     #   dummy = jnp.array(var)
         return var
 
@@ -188,9 +211,13 @@ class CustomPrior(dist.Distribution):
 
 
 def get_prior():
-    prior = dist.Uniform(low=jnp.repeat(0.0, 2),
-                         high=jnp.repeat(0.5, 2))
-    # TODO: ADD CONDITION gamma > lambda
-    # first prior ... lambda ... second prior ... gamma
-    # prior = CustomPrior(low=0.0, high=0.5)
+    """Return prior distribution for SIR example."""
+    prior = CustomPrior(low=0.0, high=0.5)
     return prior
+
+
+def true_posterior(x_obs: jnp.ndarray,
+                   prior: dist.Distribution) -> jnp.ndarray:
+    """Return "true" posterior for SIR example."""
+    # NOTE: no tractable distribution for this model
+    # TODO: should obtain thetas from a good run of the model

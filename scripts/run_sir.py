@@ -8,7 +8,10 @@ import os
 import pickle as pkl
 from rsnl.inference import run_rsnl
 from rsnl.examples.sir import (assumed_dgp, get_prior,
-                               calculate_summary_statistics, true_dgp)
+                               calculate_summary_statistics, true_dgp,
+                            #    true_posterior
+                               )
+from rsnl.metrics import calculate_metrics
 from rsnl.visualisations import plot_and_save_all
 from rsnl.model import get_robust_model
 
@@ -18,15 +21,18 @@ def run_sir_inference():
     model = get_robust_model
     prior = get_prior()
     rng_key = random.PRNGKey(0)
+    sample_draw = prior.sample(rng_key)
+    log_pdf = prior.log_prob(sample_draw)
     sim_fn = assumed_dgp
     summ_fn = calculate_summary_statistics
+
     # true_params = prior.sample(rng_key)
-    true_params = jnp.array([.2, .1])
+    true_params = jnp.array([.1, .2]) # NOTE: NOW gamma, beta
     rng_key, sub_key = random.split(rng_key)
     x_obs = true_dgp(sub_key, *true_params)
     x_obs = calculate_summary_statistics(x_obs)
-    mcmc = run_rsnl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
-                    true_params)
+    mcmc, flow = run_rsnl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
+                          true_params)
     mcmc.print_summary()
     folder_name = "vis/rsnl_sir"
     isExist = os.path.exists(folder_name)
@@ -42,6 +48,7 @@ def run_sir_inference():
 
     # TODO: INCLUDE FILENAME
     plot_and_save_all(inference_data, true_params)
+    calculate_metrics(inference_data)
 
 
 if __name__ == '__main__':

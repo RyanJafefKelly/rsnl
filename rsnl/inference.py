@@ -10,8 +10,9 @@ from flowjax.flows import CouplingFlow  # type: ignore
 from flowjax.bijections import RationalQuadraticSpline  # type: ignore
 from flowjax.distributions import StandardNormal  # type: ignore
 from flowjax.train.data_fit import fit_to_data  # type: ignore
+import time
 
-from .utils import vmap_dgp #, lame_vmap
+from rsnl.utils import vmap_dgp #, lame_vmap
 
 
 def run_rsnl(
@@ -51,7 +52,7 @@ def run_rsnl(
     # hyperparameters
     # TODO: different approach than hardcode
     num_rounds = 3
-    num_sims_per_round = 500  # NOTE: CHANGED FOR TESTING
+    num_sims_per_round = 400  # NOTE: CHANGED FOR TESTING
     num_final_posterior_samples = 10_000
     thinning = 10
     num_warmup = 1000
@@ -89,13 +90,13 @@ def run_rsnl(
                     thinning=thinning,
                     num_chains=num_chains)
         rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
-        laplace_var = 0.3 * jnp.abs(x_obs_standard)  # TODO: In testing..
+        scale_adj_var = 0.3 * jnp.abs(x_obs_standard)  # TODO: In testing..
         if i == 0:  # TODO! VERIFY
-            laplace_var = None
+            scale_adj_var = None
         mcmc.run(sub_key1, x_obs_standard,
                  prior,
                  flow=flow,
-                 laplace_var=laplace_var,
+                 scale_adj_var=scale_adj_var,
                  standardisation_params=standardisation_params,
                  init_params=init_params
                  )
@@ -107,21 +108,26 @@ def run_rsnl(
             init_params[k] = mcmc.get_samples()[k][-rand_idx]
 
         print('init_params: ', init_params)
-
+        
         thetas = mcmc.get_samples()['theta']
-
+        mcmc.print_summary()  # TODO: include for now
+        print('theta mean: ', jnp.mean(thetas, axis=0))
+        print('theta std: ', jnp.std(thetas, axis=0))
         sim_keys = random.split(rng_key, len(thetas))
 
         # TODO! VERY LAME FIX
         x_sims = jnp.empty((0, summary_dims))
         valid_idx = []
         for ii, theta in enumerate(thetas):
+            # tic = time.time()
             if ii % 50 == 0:
                 print('ii: ', ii)
             x_sim = sum_fn(sim_fn(sim_keys[ii], *theta))
             if x_sim is not None:  # TODO? smoother approach
                 x_sims = jnp.append(x_sims, x_sim.reshape(-1, summary_dims), axis=0)
                 valid_idx.append(ii)
+            # toc = time.time()
+            # print('time: ', toc - tic)
 
 
         # vmap_dgp_fn = lame_vmap(sim_fn, sum_fn)
@@ -175,9 +181,9 @@ def run_rsnl(
                 thinning=thinning,
                 num_chains=num_chains)  # TODO: MAKING NUMBERS UP
     rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
-    laplace_var = 0.3 * jnp.abs(x_obs_standard)
+    scale_adj_var = 0.3 * jnp.abs(x_obs_standard)
     mcmc.run(sub_key1, x_obs_standard, prior, flow=flow, standardisation_params=standardisation_params,
-             laplace_var=laplace_var,
+             scale_adj_var=scale_adj_var,
              init_params=init_params,
              )
-    return mcmc
+    return mcmc, flow

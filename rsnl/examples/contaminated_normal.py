@@ -60,35 +60,26 @@ def get_prior():
     """Return prior for contaminated normal example."""
     return dist.Normal(jnp.array([0.0]), jnp.array([10.0]))
 
-# def get_model():
-    # model = get_robust_model(prior, flow, laplace_var, st)
-    """Return numpyro model for inference on contaminated normal example."""
-    # def model(x_obs: jnp.ndarray,
-    #           flow: Optional[FlowNumpyro] = None,
-    #           laplace_var:  Optional[jnp.ndarray] = None,
-    #           standardisation_params=None) -> jnp.ndarray:
 
-    #     prior = dist.Normal(jnp.array([0.0]), jnp.array([10.0]))
+def true_posterior(x_obs: jnp.ndarray,
+                   prior: dist.Distribution) -> jnp.ndarray:
+    """Return true posterior for contaminated normal example.
 
-    #     laplace_mean = jnp.array([0.0, 0.0])
+    Args:
+        x_obs (jnp.ndarray): _description_
+        prior (dist.Distribution): _description_
 
-    #     if laplace_var is None:
-    #         laplace_var = jnp.array([1.0, 1.0])
+    Returns:
+        jnp.ndarray: _description_
+    """
+    # Conjugate prior with known variance
+    n_obs = 100
+    true_dgp_var = 1.0
+    prior_var = prior.variance
+    obs_mean = x_obs[0]
 
-    #     theta = numpyro.sample('theta', prior)
-    #     theta_standard = numpyro.deterministic('theta_standard', (theta - standardisation_params['theta_mean']) / standardisation_params['theta_std'])
-
-    #     adj_params = numpyro.sample('adj_params', dist.Laplace(laplace_mean,
-    #                                                            laplace_var))
-    #     x_adj = numpyro.deterministic('x_adj', x_obs - adj_params)
-
-    #     if flow is not None:  # TODO?
-    #         x_adj_sample = numpyro.sample('x_adj_sample',
-    #                                       FlowNumpyro(flow, theta=theta_standard),
-    #                                       obs=x_adj)
-    #     else:
-    #         x_adj_sample = x_adj
-
-    #     return x_adj_sample
-
-    # return model
+    true_post_var = (1/prior_var + n_obs/true_dgp_var) ** -1
+    true_post_mu = (true_post_var *
+                    (prior.mean/prior_var + ( (obs_mean * n_obs)/ true_dgp_var)))
+    true_post_std = jnp.sqrt(true_post_var)
+    return dist.Normal(true_post_mu, true_post_std)
