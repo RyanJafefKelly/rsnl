@@ -61,24 +61,24 @@ def base_dgp(rng_key: PRNGKeyArray,
                           stepsize_controller=stepsize_controller
                         #   max_steps_reached=10_000,
                           )
-    except Exception:
+    except Exception:  # NOTE: CAN TURN OFF EXCEPTIONS
         return None
     return 1e+6 * sol.ys[:, 1]  # only return infection data
 
 
 def assumed_dgp(rng_key: PRNGKeyArray,
-                beta: jnp.ndarray,
-                gamma: jnp.ndarray) -> jnp.ndarray:
+                gamma: jnp.ndarray,
+                beta: jnp.ndarray) -> jnp.ndarray:
     """Assumed DGP for the SIR model."""
-    x = base_dgp(rng_key, beta, gamma)
+    x = base_dgp(rng_key, gamma, beta)
     return x
 
 
 def true_dgp(rng_key: PRNGKeyArray,
-             beta: jnp.ndarray,
-             gamma: jnp.ndarray) -> jnp.ndarray:
+             gamma: jnp.ndarray,
+             beta: jnp.ndarray) -> jnp.ndarray:
     """True DGP for the SIR model including weekend reporting lag."""
-    x = base_dgp(rng_key, beta, gamma)
+    x = base_dgp(rng_key, gamma, beta)
     x = weekend_lag(x)
     return x
 

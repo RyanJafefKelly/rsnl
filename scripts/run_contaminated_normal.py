@@ -32,9 +32,9 @@ def run_contaminated_normal(args):
     mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                           true_param)
     mcmc.print_summary()
-    # isExist = os.path.exists(folder_name)
-    # if not isExist:
-    #     os.makedirs(folder_name)
+    isExist = os.path.exists(folder_name)
+    if not isExist:
+        os.makedirs(folder_name)
     inference_data = az.from_numpyro(mcmc)
 
     with open(f'{folder_name}_thetas.pkl', 'wb') as f:

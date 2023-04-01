@@ -2,6 +2,7 @@
 
 from typing import Callable, Optional
 # import jax
+import multiprocessing as mp
 import jax.numpy as jnp
 import jax.random as random
 import numpyro.distributions as dist  # type: ignore
@@ -12,8 +13,15 @@ from flowjax.bijections import RationalQuadraticSpline  # type: ignore
 from flowjax.distributions import StandardNormal  # type: ignore
 from flowjax.train.data_fit import fit_to_data  # type: ignore
 import time
+from functools import partial
 
 from rsnl.utils import vmap_dgp #, lame_vmap
+
+
+def dgp_fn_top(sim_fn, sum_fn, *args):
+    sim_key = args[0]
+    theta = args[1:][0]
+    return sum_fn(sim_fn(sim_key, *theta))
 
 
 def run_rsnl(
@@ -110,7 +118,7 @@ def run_rsnl(
             init_params[k] = mcmc.get_samples()[k][-rand_idx]
 
         print('init_params: ', init_params)
-        
+
         thetas = mcmc.get_samples()['theta']
         mcmc.print_summary()  # TODO: include for now
         print('theta mean: ', jnp.mean(thetas, axis=0))
@@ -120,23 +128,32 @@ def run_rsnl(
         # TODO! PARALLELISE SIMULATIONS
         x_sims = jnp.empty((0, summary_dims))
         valid_idx = []
-        for ii, theta in enumerate(thetas):
-            # tic = time.time()
-            if ii % 50 == 0:
-                print('ii: ', ii)
-            x_sim = sum_fn(sim_fn(sim_keys[ii], *theta))
-            if x_sim is not None:  # TODO? smoother approach
-                x_sims = jnp.append(x_sims, x_sim.reshape(-1, summary_dims), axis=0)
-                valid_idx.append(ii)
-            # toc = time.time()
-            # print('time: ', toc - tic)
+
+        num_processes = max(1, mp.cpu_count() - 1)
+
+        pool = mp.Pool(num_processes)
+        dgp_fn = partial(dgp_fn_top, sim_fn, sum_fn)
+        x_sims = pool.starmap_async(dgp_fn, zip(sim_keys, thetas)).get(
+            timeout=10000  # in seconds
+        )
+        # for ii, theta in enumerate(thetas):
+        #     # tic = time.time()
+        #     if ii % 50 == 0:
+        #         print('ii: ', ii)
+        #     x_sim = sum_fn(sim_fn(sim_keys[ii], *theta))
+        #     if x_sim is not None:  # TODO? smoother approach
+        #         x_sims = jnp.append(x_sims, x_sim.reshape(-1, summary_dims), axis=0)
+        #         valid_idx.append(ii)
+        #     # toc = time.time()
+        #     # print('time: ', toc - tic)
 
 
         # vmap_dgp_fn = lame_vmap(sim_fn, sum_fn)
         # x_sims = jnp.squeeze(vmap_dgp_fn(thetas, sim_keys))
 
-        x_sims_all = jnp.append(x_sims_all, x_sims.reshape(-1, summary_dims), axis=0)
-        thetas_all = jnp.append(thetas_all, thetas.reshape(-1, theta_dims)[valid_idx, :], axis=0)
+        x_sims_all = jnp.append(x_sims_all, jnp.array(x_sims).reshape(-1, summary_dims), axis=0)
+        # TODO? no invalid handling
+        thetas_all = jnp.append(thetas_all, thetas.reshape(-1, theta_dims), axis=0)
 
         # standardise simulated summaries
         standardisation_params['x_sims_mean'] = jnp.mean(x_sims_all, axis=0)
