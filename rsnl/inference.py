@@ -1,6 +1,7 @@
 """Inference (well sampling) methods for RSNL."""
 
 from typing import Callable, Optional
+# import jax
 import jax.numpy as jnp
 import jax.random as random
 import numpyro.distributions as dist  # type: ignore
@@ -51,12 +52,13 @@ def run_rsnl(
     """
     # hyperparameters
     # TODO: different approach than hardcode
-    num_rounds = 3
-    num_sims_per_round = 400  # NOTE: CHANGED FOR TESTING
+    num_rounds = 5
+    num_sims_per_round = 1000  # NOTE: CHANGED FOR TESTING
     num_final_posterior_samples = 10_000
     thinning = 10
     num_warmup = 1000
-    num_chains = 1
+    num_chains = 4
+    # num_devices = jax.local_device_count()
     summary_dims = len(x_obs)
     theta_dims = len(true_param)  # TODO! BETTER WAY TO DO THIS
 
@@ -115,7 +117,7 @@ def run_rsnl(
         print('theta std: ', jnp.std(thetas, axis=0))
         sim_keys = random.split(rng_key, len(thetas))
 
-        # TODO! VERY LAME FIX
+        # TODO! PARALLELISE SIMULATIONS
         x_sims = jnp.empty((0, summary_dims))
         valid_idx = []
         for ii, theta in enumerate(thetas):

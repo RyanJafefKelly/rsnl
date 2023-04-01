@@ -23,7 +23,7 @@ def run_contaminated_slcp_inference():
     # print(jax.local_device_count())
     model = get_robust_model
     prior = get_prior()
-    rng_key = random.PRNGKey(2)
+    rng_key = random.PRNGKey(0)
     sim_fn = assumed_dgp
     summ_fn = calculate_summary_statistics
     true_params = jnp.array([0.7, -2.9, -1.0, -0.9, 0.6])
