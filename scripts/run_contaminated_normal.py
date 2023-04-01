@@ -37,10 +37,10 @@ def run_contaminated_normal(args):
         os.makedirs(folder_name)
     inference_data = az.from_numpyro(mcmc)
 
-    with open(f'{folder_name}_thetas.pkl', 'wb') as f:
+    with open(f'{folder_name}thetas.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.theta, f)
 
-    with open(f'{folder_name}_adj_params.pkl', 'wb') as f:
+    with open(f'{folder_name}adj_params.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.adj_params, f)
 
     # TODO: INCLUDE FILENAME

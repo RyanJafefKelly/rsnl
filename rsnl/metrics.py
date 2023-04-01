@@ -22,7 +22,7 @@ def plot_and_save_coverage(empirical_coverage, folder_name=""):
     # TODO! MAKE PAPER WORTHY.
     plt.plot([0, 1], [0, 1])
     plt.plot(empirical_coverage)
-    plt.savefig("{folder_name}_empirical_coverage.png")
+    plt.savefig(f"{folder_name}_empirical_coverage.png")
 
 
 def get_true_posterior_draws(posterior, num_draws):

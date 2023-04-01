@@ -48,10 +48,10 @@ def run_contaminated_slcp_inference(args):
         os.makedirs(folder_name)
     inference_data = az.from_numpyro(mcmc)
 
-    with open(f'{folder_name}_theta.pkl', 'wb') as f:
+    with open(f'{folder_name}theta.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.theta, f)
 
-    with open(f'{folder_name}_adj_params.pkl', 'wb') as f:
+    with open(f'{folder_name}adj_params.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.adj_params, f)
 
     calculate_metrics(x_obs, inference_data, prior, flow, true_posterior,

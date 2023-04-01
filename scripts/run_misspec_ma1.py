@@ -17,7 +17,7 @@ from rsnl.model import get_robust_model
 def run_misspec_ma1_inference(args):
     """Script to run the full inference task on misspec MA(1) example."""
     seed = args.seed
-    folder_name = "res/rsnl_misspec_ma1_seed_{}".format(seed)
+    folder_name = "res/misspec_ma1/seed_{}/".format(seed)
 
     model = get_robust_model
     prior = get_prior()
@@ -35,10 +35,10 @@ def run_misspec_ma1_inference(args):
         os.makedirs(folder_name)
     inference_data = az.from_numpyro(mcmc)
 
-    with open(f'{folder_name}_thetas.pkl', 'wb') as f:
+    with open(f'{folder_name}thetas.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.theta, f)
 
-    with open(f'{folder_name}_adj_params.pkl', 'wb') as f:
+    with open(f'{folder_name}adj_params.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.adj_params, f)
 
     # TODO: INCLUDE FILENAME

@@ -8,11 +8,11 @@ import matplotlib.colors as mcolors  # type: ignore
 
 def plot_mcmc(inference_data, folder_name=""):
     az.plot_trace(inference_data, var_names=['~x_adj'], compact=False)
-    plt.savefig(f"{folder_name}_traceplots.png")
+    plt.savefig(f"{folder_name}traceplots.png")
     az.plot_ess(inference_data, var_names=['~x_adj'], kind="evolution")
-    plt.savefig(f"{folder_name}_ess_plots.png")
+    plt.savefig(f"{folder_name}ess_plots.png")
     az.plot_autocorr(inference_data, var_names=['~x_adj'])
-    plt.savefig(f"{folder_name}_autocorr.png")
+    plt.savefig(f"{folder_name}autocorr.png")
 
 
 def plot_theta_posterior(inference_data, reference_values=None, folder_name=""):
@@ -54,7 +54,7 @@ def plot_theta_posterior(inference_data, reference_values=None, folder_name=""):
                             # figsize=(64, 64)
                             )
 
-    plt.savefig("{folder_name}_joint_theta.pdf", bbox_inches='tight')
+    plt.savefig(f"{folder_name}joint_theta.pdf", bbox_inches='tight')
     plt.clf()
 
 
@@ -84,7 +84,7 @@ def plot_adj_posterior(inference_data, folder_name=""):
         plt.legend(fontsize=20)
         # plt.title("$b_0 = 0.01$")
         plt.show()
-        plt.savefig(f'{folder_name}_adj_param{i+1}.pdf', bbox_inches='tight')
+        plt.savefig(f'{folder_name}adj_param{i+1}.pdf', bbox_inches='tight')
         plt.clf()
 
 
