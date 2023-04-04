@@ -25,31 +25,33 @@ def plot_and_save_coverage(empirical_coverage, folder_name=""):
     plt.savefig(f"{folder_name}_empirical_coverage.png")
 
 
-def get_true_posterior_draws(posterior, num_draws):
+def get_true_posterior_draws(true_posterior, num_draws=10000,
+                             x_obs=None, prior=None, seed=0):
     # TODO? _ maybe do...
-    # TODO: dist.Distribution
-    if isinstance(posterior, dist.Distribution):
-        pass
-    # TODO: MCMC
-    if isinstance(posterior, MCMC):
-        pass
-    pass
+    # n_true = 10000
+    rng_key = random.PRNGKey(seed)
+    if isinstance(true_posterior, dist.Distribution):
+        true_posterior_draws = true_posterior.sample(rng_key, (num_draws,))
+    if isinstance(true_posterior, MCMC):
+        true_posterior.run(rng_key, x_obs, prior)
+        true_posterior_draws = true_posterior.get_samples()['theta']
+    return true_posterior_draws
 
 
-def calculate_coverage(x_obs, thetas, prior, flow, true_posterior):
+def calculate_coverage(x_obs, thetas, prior, flow, true_posterior, seed=0):
     """Calculate empirical coverage.
 
     Calculate the expected coverage probability for a given set of samples, posterior estimator,
     and the function to compute the highest posterior density region.
     """
-    rng_key = random.PRNGKey(0)
     coverage_levels = jnp.linspace(0.1, 0.9, 9)  # TODO?
     true_posterior = true_posterior(x_obs, prior)  # TODO?
     n_true = 1000
-    true_posterior_draws = true_posterior.sample(rng_key, (n_true,))
     N, _ = thetas.shape
     log_probs = flow.log_prob(x_obs, thetas)
-
+    true_posterior_draws = get_true_posterior_draws(true_posterior, num_draws=n_true,
+                                                    x_obs=x_obs, prior=prior,
+                                                    seed=seed)
     log_probs_true = flow.log_prob(x_obs, true_posterior_draws)
     sort_idx = jnp.argsort(log_probs)[::-1]
     log_probs = log_probs[sort_idx]
