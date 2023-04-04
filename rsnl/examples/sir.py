@@ -10,11 +10,33 @@ from diffrax import (diffeqsolve, ControlTerm, Euler, EulerHeun, Heun, MultiTerm
                      SaveAt, VirtualBrownianTree, PIDController)
 import jax.lax as lax
 from numpyro.distributions import constraints
+import gc, psutil, sys  # TODO: TESTING
+
+
+def clear_caches():
+    """Clear cache to stop memory issues with JAX + diffrax."""
+    process = psutil.Process()
+    if process.memory_info().rss > 0.25 * 2 ** 30:  # TODO brought down from 500 to 250 MB memory usage
+        for module_name, module in sys.modules.copy().items():
+            if module_name.startswith("jax"):
+                for obj_name in dir(module):
+                    # print('obj_name ', obj_name)
+                    obj = getattr(module, obj_name)
+                    if hasattr(obj, "cache_clear"):
+                        # print('obj with cache: ', obj)
+                        try:
+                            obj.cache_clear()
+                        except:
+                            pass
+    gc.collect()
+    diffeqsolve._cached.clear_cache()
+    print("Cache cleared")
 
 
 def base_dgp(rng_key: PRNGKeyArray,
              gamma: jnp.ndarray,
              beta: jnp.ndarray) -> jnp.ndarray:
+    """Base DGP for the SIR model."""
     def drift(t, y, args):
         """Deterministic part of SDE."""
         s, i, r, R0 = y
@@ -63,6 +85,8 @@ def base_dgp(rng_key: PRNGKeyArray,
                           )
     except Exception:  # NOTE: CAN TURN OFF EXCEPTIONS
         return None
+    clear_caches()
+    print(f"Process uses {psutil.Process().memory_info().rss / (1024 * 1024)} MB memory.")
     return 1e+6 * sol.ys[:, 1]  # only return infection data
 
 
