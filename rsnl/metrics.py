@@ -20,8 +20,9 @@ def log_prob_at_true_param(x_obs, true_param, prior, flow):
 def plot_and_save_coverage(empirical_coverage, folder_name=""):
     """Plot coverage."""
     # TODO! MAKE PAPER WORTHY.
+    plt.clf()
     plt.plot([0, 1], [0, 1])
-    plt.plot(empirical_coverage)
+    plt.plot(np.linspace(0, 1, len(empirical_coverage)), empirical_coverage)
     plt.savefig(f"{folder_name}_empirical_coverage.png")
 
 
