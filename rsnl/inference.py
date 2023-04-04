@@ -5,6 +5,7 @@ from typing import Callable, Optional
 import multiprocessing as mp
 import jax.numpy as jnp
 import jax.random as random
+import numpyro
 import numpyro.distributions as dist  # type: ignore
 from jax._src.prng import PRNGKeyArray  # for typing
 from numpyro.infer import MCMC, NUTS  # type: ignore
@@ -58,6 +59,9 @@ def run_rsnl(
     MCMC
         A NumPyro MCMC object containing the final posterior samples.
     """
+    device_count = min(mp.cpu_count() - 1, 4)
+    device_count = max(device_count, 1)
+    numpyro.set_host_device_count(device_count)
     # hyperparameters
     # TODO: different approach than hardcode
     num_rounds = 5
