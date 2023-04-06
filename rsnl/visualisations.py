@@ -77,7 +77,7 @@ def plot_adj_posterior(inference_data, folder_name=""):
     summary_dims = inference_data.posterior.adj_params.values.shape[-1]
     prior_samples = random.laplace(rng_key, shape=(10000, summary_dims))
     for i in range(summary_dims):  # TODO: lazy
-        az.plot_dist(inference_data.posterior.adj_params.values[:, :, i].flatten(),  # TODO: CHANGED
+        az.plot_dist(inference_data.posterior.adj_params.values[:, i].flatten(),  # TODO: CHANGED
                      label='Posterior',
                      color='black')
         az.plot_dist(prior_samples[:, i],
@@ -108,7 +108,7 @@ def plot_and_save_all(inference_data, true_params, folder_name=""):
 
     for i in range(theta_dims):
         key_name = 'theta_' + str(i+1)
-        theta_plot[key_name] = inference_data.posterior.theta.values.flatten()
+        theta_plot[key_name] = inference_data.posterior.theta.values[:, :, i].flatten()
         var_name_map[key_name] = f'theta_{i+1}'
 
     # for i in range(summary_dims):

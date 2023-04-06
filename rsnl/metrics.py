@@ -38,11 +38,13 @@ def get_true_posterior_draws(true_posterior, num_draws=10000,
     if isinstance(true_posterior, dist.Distribution):
         true_posterior = true_posterior(x_obs, prior)  # TODO?
         true_posterior_draws = true_posterior.sample(rng_key, (num_draws,))
-    if isinstance(true_posterior, MCMC):
+    # TODO: below condition seems ugly
+    elif hasattr(true_posterior, '__call__'):
+    # if isinstance(true_posterior, MCMC) or isinstance(true_posterior, function):
         true_posterior(x_obs, prior)
         true_posterior.run(rng_key, x_obs, prior)
         true_posterior_draws = true_posterior.get_samples()['theta']
-    if isinstance(true_posterior, str):
+    elif isinstance(true_posterior, str):
         with open(true_posterior, 'rb') as file:
             true_posterior_draws = pkl.load(file)
 
