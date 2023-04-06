@@ -12,7 +12,7 @@ from rsnl.examples.misspec_ma1 import (get_prior, assumed_dgp,
                                        calculate_summary_statistics)
 from rsnl.visualisations import plot_and_save_all
 from rsnl.model import get_robust_model
-
+from rsnl.metrics import calculate_metrics
 
 def run_misspec_ma1_inference(args):
     """Script to run the full inference task on misspec MA(1) example."""
@@ -41,10 +41,12 @@ def run_misspec_ma1_inference(args):
     with open(f'{folder_name}adj_params.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.adj_params, f)
 
-    # TODO: INCLUDE FILENAME
     plot_and_save_all(inference_data, pseudo_true_param,
                       folder_name=folder_name)
-
+    # TODO: METRICS
+    true_posterior = "res/true_posterior_samples/misspec_ma1/true_posterior_samples.pkl"
+    calculate_metrics(x_obs, inference_data, prior, flow,
+                      true_posterior, folder_name=folder_name)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

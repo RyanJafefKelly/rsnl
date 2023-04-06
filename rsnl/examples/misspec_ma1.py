@@ -11,8 +11,8 @@ from jax._src.prng import PRNGKeyArray  # for typing
 from rsnl.utils import FlowNumpyro
 
 
-def assumed_dgp(t1, n_obs=100, key=None):
-    w = dist.Normal(0, 1).sample(key=key, sample_shape=(1, n_obs + 2))  # NOTE: removed batch_size
+def assumed_dgp(rng_key, t1, n_obs=100):
+    w = dist.Normal(0, 1).sample(key=rng_key, sample_shape=(1, n_obs + 2))  # NOTE: removed batch_size
     x = w[:, 2:] + t1 * w[:, 1:-1]
     return x
 
@@ -36,7 +36,8 @@ def calculate_summary_statistics(x):
 
 def get_prior():
     """Return prior for inference on misspec MA(1)"""
-    return dist.Uniform(low=-1.0, high=1.0)
+    return dist.Uniform(low=jnp.array([-1.0]),
+                        high=jnp.array([1.0]))
 
 
 def true_posterior(x_obs: jnp.ndarray,
