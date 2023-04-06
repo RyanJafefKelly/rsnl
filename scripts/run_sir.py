@@ -15,7 +15,7 @@ from rsnl.examples.sir import (assumed_dgp, get_prior,
 from rsnl.metrics import calculate_metrics
 from rsnl.visualisations import plot_and_save_all
 from rsnl.model import get_robust_model
-
+import matplotlib.pyplot as plt  # TODO: testing
 
 def run_sir_inference(args):
     """Script to run the full inference task on contaminated SLCP example."""
@@ -29,10 +29,13 @@ def run_sir_inference(args):
     summ_fn = calculate_summary_statistics
 
     # true_params = prior.sample(rng_key)
-    true_params = jnp.array([.1, .2])  # NOTE: arranged [gamma, beta]
+    true_params = jnp.array([.1, .15])  # NOTE: arranged [gamma, beta]
     rng_key, sub_key = random.split(rng_key)
     x_obs = true_dgp(sub_key, *true_params)
+    plt.plot(x_obs)
+    plt.savefig('visualise_observed_sir.png')
     x_obs = calculate_summary_statistics(x_obs)
+    print('x_obs: ', x_obs)
     mcmc, flow = run_rsnl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
                           true_params)
     mcmc.print_summary()

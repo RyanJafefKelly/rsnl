@@ -92,7 +92,9 @@ def base_dgp(rng_key: PRNGKeyArray,
 
 def assumed_dgp(rng_key: PRNGKeyArray,
                 gamma: jnp.ndarray,
-                beta: jnp.ndarray) -> jnp.ndarray:
+                beta: jnp.ndarray,
+                *args,
+                **kwargs) -> jnp.ndarray:
     """Assumed DGP for the SIR model."""
     x = base_dgp(rng_key, gamma, beta)
     return x
@@ -140,7 +142,8 @@ def calculate_summary_statistics(x):
 
     summaries = jnp.array(summaries)
     # TODO? HACKY
-    summaries = jnp.nan_to_num(summaries, nan=0, posinf=0, neginf=0)
+    summaries = jnp.nan_to_num(summaries, nan=-1, posinf=-1, neginf=-1)
+    print('summaries: ', summaries)
     return summaries
 
 
@@ -154,9 +157,9 @@ def weekend_lag(x, misspecify_multiplier=0.95):
     missed_cases = (x[sat_idx] - sat_new) + (x[sun_idx] - sun_new)
     mon_new = x[mon_idx] + missed_cases
 
-    x = x.at[sat_idx].set(sat_new[sat_idx])
-    x = x.at[sun_idx].set(sun_new[sun_idx])
-    x = x.at[mon_idx].set(mon_new[mon_idx])
+    x = x.at[sat_idx].set(sat_new)
+    x = x.at[sun_idx].set(sun_new)
+    x = x.at[mon_idx].set(mon_new)
 
     return x
 
@@ -236,7 +239,9 @@ class CustomPrior(dist.Distribution):
 
 def get_prior():
     """Return prior distribution for SIR example."""
-    prior = CustomPrior(low=0.0, high=0.5)
+    # prior = CustomPrior(low=0.0, high=0.5)
+    prior = dist.Uniform(low=jnp.array([0.0, 0.0]),
+                         high=jnp.array([0.5, 0.5]))
     return prior
 
 
