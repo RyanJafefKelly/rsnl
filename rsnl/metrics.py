@@ -6,7 +6,7 @@ import jax.numpy as jnp
 import numpyro.distributions as dist  # type: ignore
 import matplotlib.pyplot as plt
 from numpyro.infer import MCMC
-
+import pickle as pkl
 
 def adj_param_test():
     pass
@@ -19,11 +19,15 @@ def log_prob_at_true_param(x_obs, true_param, prior, flow):
 
 def plot_and_save_coverage(empirical_coverage, folder_name=""):
     """Plot coverage."""
-    # TODO! MAKE PAPER WORTHY.
+    # TODO: could improve
     plt.clf()
-    plt.plot([0, 1], [0, 1])
+    plt.plot([0, 1], [0, 1], color='gray', linestyle='dashed')
     plt.plot(np.linspace(0, 1, len(empirical_coverage)), empirical_coverage)
-    plt.savefig(f"{folder_name}_empirical_coverage.png")
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.xlabel("Credibility level")
+    plt.ylabel("Empirical coverage")
+    plt.savefig(f"{folder_name}empirical_coverage.png")
 
 
 def get_true_posterior_draws(true_posterior, num_draws=10000,
@@ -32,10 +36,16 @@ def get_true_posterior_draws(true_posterior, num_draws=10000,
     # n_true = 10000
     rng_key = random.PRNGKey(seed)
     if isinstance(true_posterior, dist.Distribution):
+        true_posterior = true_posterior(x_obs, prior)  # TODO?
         true_posterior_draws = true_posterior.sample(rng_key, (num_draws,))
     if isinstance(true_posterior, MCMC):
+        true_posterior(x_obs, prior)
         true_posterior.run(rng_key, x_obs, prior)
         true_posterior_draws = true_posterior.get_samples()['theta']
+    if isinstance(true_posterior, str):
+        with open(true_posterior, 'rb') as file:
+            true_posterior_draws = pkl.load(file)
+
     return true_posterior_draws
 
 
@@ -46,7 +56,6 @@ def calculate_coverage(x_obs, thetas, prior, flow, true_posterior, seed=0):
     and the function to compute the highest posterior density region.
     """
     coverage_levels = jnp.linspace(0.1, 0.9, 9)  # TODO?
-    true_posterior = true_posterior(x_obs, prior)  # TODO?
     n_true = 1000
     N, _ = thetas.shape
     log_probs = flow.log_prob(x_obs, thetas)
