@@ -105,9 +105,10 @@ def true_posterior(x_obs: jnp.ndarray,
     # true_params = jnp.array([0.7, -2.9, -1.0, -0.9, 0.6])
     # TODO: RUN MCMC TO GET TRUE POSTERIOR
     # TODO: m_theta and all that in numpyro
+    x_obs = x_obs[:8]  # remove contaminated draw
     model = true_numpyro_model
     nuts_kernel = NUTS(model)  # NOTE: increase target_accept_prob?
-    # TODO: NUTS IS BAD MULTIMODAL POSTERIOR
+    # TODO: NUTS IS BAD FOR MULTIMODAL POSTERIOR
     mcmc = MCMC(nuts_kernel,
             num_warmup=10_000,
             num_samples=10_000,
