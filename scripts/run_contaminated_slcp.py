@@ -43,7 +43,7 @@ def run_contaminated_slcp_inference(args):
     # az.plot_pair(inference_data.posterior, kind='kde')
     # plot_theta_posterior(inference_data, true_params)
     mcmc, flow = run_rsnl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
-                          true_params)
+                          true_params=true_params)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
     if not isExist:

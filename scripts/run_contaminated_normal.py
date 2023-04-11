@@ -32,8 +32,8 @@ def run_contaminated_normal(args):
     # x_obs = true_dgp(true_params)
     x_obs = jnp.array([1.0, 2.0])
     mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
-                        #   true_param,
-                        theta_dims=1
+                          jax_parallelise=True, true_params=true_param,
+                          theta_dims=1
                           )
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
