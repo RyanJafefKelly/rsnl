@@ -33,7 +33,9 @@ def run_rsnl(
     sum_fn: Callable,
     rng_key: PRNGKeyArray,
     x_obs: jnp.ndarray,
-    true_param: Optional[jnp.ndarray] = None,
+    jax_parallelise=True,
+    true_params: Optional[jnp.ndarray] = None,
+    theta_dims: Optional[int] = 1
 ) -> MCMC:
     """
     An RSNL sampler for models with adjustment parameters.
@@ -52,7 +54,7 @@ def run_rsnl(
         The random number generator key.
     x_obs : jnp.ndarray
         The observed data for which the model will be fit.
-    true_param : jnp.ndarray, optional
+    true_params : jnp.ndarray, optional
         The true parameters of the model, used for reference if available.
 
     Returns
@@ -60,9 +62,9 @@ def run_rsnl(
     MCMC
         A NumPyro MCMC object containing the final posterior samples.
     """
-    device_count = min(mp.cpu_count() - 1, 4)
-    device_count = max(device_count, 1)
-    numpyro.set_host_device_count(device_count)
+    # device_count = min(mp.cpu_count() - 1, 4)
+    # device_count = max(device_count, 1)
+    # numpyro.set_host_device_count(device_count)
     # hyperparameters
     # TODO: different approach than hardcode
     num_rounds = 10
@@ -73,7 +75,11 @@ def run_rsnl(
     num_chains = 4
     # num_devices = jax.local_device_count()
     summary_dims = len(x_obs)
-    theta_dims = len(true_param)  # TODO! BETTER WAY TO DO THIS
+    if true_params is not None:
+        theta_dims = len(true_params)  # TODO! BETTER WAY TO DO THIS
+        init_thetas = jnp.repeat(true_params, num_chains).reshape(num_chains, -1)
+    else:
+        init_thetas = None
 
     x_sims_all = jnp.empty((0, summary_dims))
     thetas_all = jnp.empty((0, theta_dims))
@@ -81,7 +87,7 @@ def run_rsnl(
     flow = None
 
     init_params = {
-        'theta': jnp.repeat(true_param, num_chains).reshape(num_chains, -1),  # TODO! BETTER WAY TO DO THIS
+        'theta': init_thetas,  # TODO! BETTER WAY TO DO THIS
         'adj_params': jnp.repeat(
                                 jnp.zeros(summary_dims),
                                 num_chains
@@ -137,13 +143,19 @@ def run_rsnl(
         # TODO! PARALLELISE SIMULATIONS
         x_sims = jnp.empty((0, summary_dims))
 
-        num_processes = max(1, mp.cpu_count() - 1)
+        # num_processes = max(1, mp.cpu_count() - 1)
 
-        pool = mp.Pool(num_processes)
-        dgp_fn = partial(dgp_fn_top, sim_fn, sum_fn)
-        x_sims = pool.starmap_async(dgp_fn, zip(sim_keys, thetas)).get(
-            timeout=10000  # in seconds
-        )
+        # pool = mp.Pool(num_processes)
+        # dgp_fn = partial(dgp_fn_top, sim_fn, sum_fn)
+        # x_sims = pool.starmap_async(dgp_fn, zip(sim_keys, thetas)).get(
+        #     timeout=10000  # in seconds
+        # )
+        if jax_parallelise:
+            vmap_dgp_fn = vmap_dgp(sim_fn, sum_fn)
+            x_sims = vmap_dgp_fn(thetas, sim_keys)
+        else:
+            x_sims = [sum_fn(sim_fn(sim_key, *theta))
+                      for sim_key, theta in zip(sim_keys, thetas)]
         # TODO: could improve
         valid_idx = [ii for ii, ssx in enumerate(x_sims) if ssx is not None]
         x_sims = [ssx for ii, ssx in enumerate(x_sims) if ssx is not None]

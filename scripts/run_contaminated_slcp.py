@@ -5,6 +5,8 @@ import jax.numpy as jnp
 from jax import random
 import arviz as az  # type: ignore
 import argparse
+import multiprocessing as mp
+import numpyro  # type: ignore
 import os
 import pickle as pkl
 import arviz as az  # TODO: testing
@@ -69,5 +71,9 @@ if __name__ == '__main__':
         )
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
+
+    device_count = min(mp.cpu_count() - 1, 4)
+    device_count = max(device_count, 1)
+    numpyro.set_host_device_count(device_count)
 
     run_contaminated_slcp_inference(args)

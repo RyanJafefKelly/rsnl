@@ -54,7 +54,7 @@ def get_sir_abc_samples():
         plt.hist(thetas_acc[:, i])
         plt.savefig(f'abc_theta_{i}.png')
         plt.clf()
-    pkl.dump(thetas_acc, open('res/true_posterior_samples/sir/thetas_acc.pkl', 'wb'))
+    pkl.dump(thetas_acc, open('res/true_posterior_samples/sir/true_posterior_samples.pkl', 'wb'))
     # t1 = elfi.Prior('uniform', 0, 0.5)
     # t2 = elfi.Prior('uniform', t1, 0.5)
     # Y = elfi.Simulator(assumed_dgp, t1, t2, observed=x_obs)
