@@ -33,7 +33,7 @@ def get_sir_abc_samples():
     pool = mp.Pool(num_processes)
     sim_fn = assumed_dgp
     summ_fn = calculate_summary_statistics
-    N = 1000
+    N = 1000000
     prior = get_prior()
     dgp_fn = partial(get_ssx, prior, sim_fn, summ_fn)
     sim_keys = random.split(rng_key, N)
@@ -46,7 +46,7 @@ def get_sir_abc_samples():
         thetas[i, :] = np.array(res[i][0])
         x_sims[i, :] = np.array(res[i][1])
     d = np.linalg.norm(x_sims - x_obs, axis=1)
-    top_perc = 0.1
+    top_perc = 0.001
     top_idx = round(top_perc*N)
     idx = np.argsort(d)[:top_idx]
     thetas_acc = thetas[idx]
