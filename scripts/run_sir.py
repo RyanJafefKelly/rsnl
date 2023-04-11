@@ -5,6 +5,8 @@ import jax.numpy as jnp
 from jax import random
 import argparse
 import arviz as az  # type: ignore
+import multiprocessing as mp
+import numpyro  # type: ignore
 import os
 import pickle as pkl
 from rsnl.inference import run_rsnl
@@ -16,6 +18,7 @@ from rsnl.metrics import calculate_metrics
 from rsnl.visualisations import plot_and_save_all
 from rsnl.model import get_robust_model
 import matplotlib.pyplot as plt  # TODO: testing
+
 
 def run_sir_inference(args):
     """Script to run the full inference task on contaminated SLCP example."""
@@ -37,7 +40,7 @@ def run_sir_inference(args):
     x_obs = calculate_summary_statistics(x_obs)
     print('x_obs: ', x_obs)
     mcmc, flow = run_rsnl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
-                          true_params)
+                          jax_parallelise=False, true_params=true_params)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
     if not isExist:
@@ -64,5 +67,9 @@ if __name__ == '__main__':
         )
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
+
+    device_count = min(mp.cpu_count() - 1, 4)
+    device_count = max(device_count, 1)
+    numpyro.set_host_device_count(device_count)
 
     run_sir_inference(args)

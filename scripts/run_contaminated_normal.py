@@ -5,6 +5,8 @@ import jax.numpy as jnp
 from jax import random
 import argparse
 import arviz as az  # type: ignore
+import multiprocessing as mp
+import numpyro  # type: ignore
 import os
 import pickle as pkl
 from rsnl.metrics import calculate_metrics
@@ -26,11 +28,13 @@ def run_contaminated_normal(args):
     rng_key = random.PRNGKey(seed)
     sim_fn = assumed_dgp
     sum_fn = calculate_summary_statistics
-    true_param = jnp.array([1.0])
+    # true_param = jnp.array([1.0])
     # x_obs = true_dgp(true_params)
     x_obs = jnp.array([1.0, 2.0])
     mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
-                          true_param)
+                        #   true_param,
+                        theta_dims=1
+                          )
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
     if not isExist:
@@ -58,5 +62,9 @@ if __name__ == '__main__':
         )
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
+
+    device_count = min(mp.cpu_count() - 1, 4)
+    device_count = max(device_count, 1)
+    numpyro.set_host_device_count(device_count)
 
     run_contaminated_normal(args)
