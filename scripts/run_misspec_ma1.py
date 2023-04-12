@@ -46,9 +46,9 @@ def run_misspec_ma1_inference(args):
     plot_and_save_all(inference_data, pseudo_true_param,
                       folder_name=folder_name)
     # TODO: METRICS
-    true_posterior = "res/true_posterior_samples/misspec_ma1/true_posterior_samples.pkl"
-    calculate_metrics(x_obs, inference_data, prior, flow,
-                      true_posterior, folder_name=folder_name)
+    # true_posterior = "res/true_posterior_samples/misspec_ma1/true_posterior_samples.pkl"
+    # calculate_metrics(x_obs, inference_data, prior, flow,
+    #                   true_posterior, folder_name=folder_name)
 
 
 if __name__ == '__main__':
@@ -60,8 +60,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 
-    device_count = min(mp.cpu_count() - 1, 4)
-    device_count = max(device_count, 1)
-    numpyro.set_host_device_count(device_count)
+    # device_count = min(mp.cpu_count() - 1, 4)
+    # device_count = max(device_count, 1)
+    # numpyro.set_host_device_count(device_count)
 
     run_misspec_ma1_inference(args)
