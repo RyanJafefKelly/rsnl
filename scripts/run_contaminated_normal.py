@@ -28,7 +28,7 @@ def run_contaminated_normal(args):
     rng_key = random.PRNGKey(seed)
     sim_fn = assumed_dgp
     sum_fn = calculate_summary_statistics
-    # true_param = jnp.array([1.0])
+    true_param = jnp.array([1.0])
     # x_obs = true_dgp(true_params)
     x_obs = jnp.array([1.0, 2.0])
     mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
