@@ -212,7 +212,7 @@ def run_rsnl(
                                    max_epochs=500,
                                    max_patience=20,
                                 #    batch_size=128,  # NOTE: Changed
-                                   val_prop=0.2,  # NOTE: Changed
+                                #    val_prop=0.2,  # NOTE: Changed
                                    )
 
         # TODO: investigate smarter mass_matrix
@@ -221,7 +221,7 @@ def run_rsnl(
 
         # TODO? Replace flow library
     # SAMPLE FINAL POSTERIOR
-    nuts_kernel = NUTS(model, target_accept_prob=0.95)  # INCREASED FOR ROBUSTNESS
+    nuts_kernel = NUTS(model)
     mcmc = MCMC(nuts_kernel,
                 num_warmup=num_warmup,
                 num_samples=num_final_posterior_samples,
