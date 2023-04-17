@@ -68,8 +68,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 
-    device_count = min(mp.cpu_count() - 1, 4)
-    device_count = max(device_count, 1)
-    numpyro.set_host_device_count(device_count)
+    # device_count = min(mp.cpu_count() - 1, 4)
+    # device_count = max(device_count, 1)
+    # numpyro.set_host_device_count(device_count)
 
     run_sir_inference(args)

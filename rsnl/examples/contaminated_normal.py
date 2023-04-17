@@ -8,7 +8,6 @@ from jax._src.prng import PRNGKeyArray  # for typing
 
 def true_dgp(key: PRNGKeyArray,
              t1: jnp.ndarray,
-             y: jnp.ndarray,
              stdev_err: float = 2.0,
             #  batch_size: int = 1,
              n_obs: int = 100,

@@ -56,9 +56,8 @@ def run_contaminated_slcp_inference(args):
     with open(f'{folder_name}adj_params.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.adj_params, f)
 
-    calculate_metrics(x_obs, inference_data, prior, flow, true_posterior,
-                      folder_name=folder_name)
-    # TODO: INCLUDE FILENAME
+    # calculate_metrics(x_obs, inference_data, prior, flow, true_posterior,
+    #                   folder_name=folder_name)
     plot_and_save_all(inference_data, true_params,
                       folder_name=folder_name)
 
@@ -72,8 +71,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 
-    device_count = min(mp.cpu_count() - 1, 4)
-    device_count = max(device_count, 1)
-    numpyro.set_host_device_count(device_count)
+    # device_count = min(mp.cpu_count() - 1, 4)
+    # device_count = max(device_count, 1)
+    # numpyro.set_host_device_count(device_count)
 
     run_contaminated_slcp_inference(args)

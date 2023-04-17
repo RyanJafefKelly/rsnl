@@ -26,13 +26,16 @@ def run_contaminated_normal(args):
     model = get_robust_model
     prior = get_prior()
     rng_key = random.PRNGKey(seed)
+    rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
     sim_fn = assumed_dgp
     sum_fn = calculate_summary_statistics
-    true_param = jnp.array([1.0])
-    # x_obs = true_dgp(true_params)
-    x_obs = jnp.array([1.0, 2.0])
+    # true_params = jnp.array([1.0])
+    true_params = prior.sample(sub_key1)
+    x_obs = true_dgp(sub_key2, true_params)
+    x_obs = calculate_summary_statistics(x_obs)
+    # x_obs = jnp.array([1.0, 2.0])
     mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
-                          jax_parallelise=True, true_params=true_param,
+                          jax_parallelise=True, true_params=true_params,
                           theta_dims=1
                           )
     mcmc.print_summary()
@@ -48,10 +51,36 @@ def run_contaminated_normal(args):
         pkl.dump(inference_data.posterior.adj_params, f)
 
     # TODO: INCLUDE FILENAME
-    calculate_metrics(x_obs, inference_data, prior, flow, true_posterior,
+    # calculate_metrics(x_obs, inference_data, prior, flow, true_posterior,
+    #                   folder_name=folder_name)
+    plot_and_save_all(inference_data, true_params,
                       folder_name=folder_name)
-    plot_and_save_all(inference_data, true_param,
-                      folder_name=folder_name)
+    # log_prob  # TODO
+    log_prob_true_theta = flow.log_prob(x_obs, true_params)
+    theta_draws = inference_data.posterior.theta.values
+    theta_draws = jnp.concatenate(theta_draws, axis=0)
+    log_prob_approx_thetas = flow.log_prob(x_obs,
+                                           theta_draws)
+    sort_idx = jnp.argsort(log_prob_approx_thetas)[::-1]
+    log_prob_approx_thetas = log_prob_approx_thetas[sort_idx]
+    theta_draws = theta_draws[sort_idx]
+    N = theta_draws.shape[0]
+    empirical_coverage = [0]
+    # in top x...
+    coverage_levels = jnp.linspace(0.05, 0.95, 19)
+    # TODO
+    for coverage_level in coverage_levels:
+        coverage_index = round(coverage_level * N)
+        cut_off = log_prob_approx_thetas[coverage_index]
+        if cut_off < log_prob_true_theta:
+            empirical_coverage.append(1)
+        else:
+            empirical_coverage.append(0)
+    empirical_coverage.append(1)
+    save_file = f'{folder_name}coverage.txt'
+    with open(save_file, 'wb') as f:
+        for val in empirical_coverage:
+            f.write(f"{str(val)}\n".encode('utf-8'))
 
 
 if __name__ == '__main__':
@@ -63,8 +92,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 
-    device_count = min(mp.cpu_count() - 1, 4)
-    device_count = max(device_count, 1)
-    numpyro.set_host_device_count(device_count)
+    # device_count = min(mp.cpu_count() - 1, 4)
+    # device_count = max(device_count, 1)
+    # numpyro.set_host_device_count(device_count)
 
     run_contaminated_normal(args)
