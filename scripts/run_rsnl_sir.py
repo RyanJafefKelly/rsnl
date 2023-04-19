@@ -14,7 +14,7 @@ from rsnl.examples.sir import (assumed_dgp, get_prior,
                                calculate_summary_statistics, true_dgp,
                             #    true_posterior
                                )
-from rsnl.metrics import calculate_metrics
+from rsnl.metrics import save_coverage_file
 from rsnl.visualisations import plot_and_save_all
 from rsnl.model import get_robust_model
 import matplotlib.pyplot as plt  # TODO: testing
@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt  # TODO: testing
 def run_sir_inference(args):
     """Script to run the full inference task on contaminated SLCP example."""
     seed = args.seed
-    folder_name = "res/sir/seed_{}/".format(seed)
+    folder_name = "res/sir/rsnl/seed_{}/".format(seed)
 
     model = get_robust_model
     prior = get_prior()
@@ -55,8 +55,10 @@ def run_sir_inference(args):
 
     plot_and_save_all(inference_data, true_params, folder_name=folder_name)
     # TODO: TRUE DISTRIBUTION FOR SIR MODEL
-    calculate_metrics(x_obs, inference_data, prior, flow, None,
-                      folder_name=folder_name)
+    # calculate_metrics(x_obs, inference_data, prior, flow, None,
+    #                   folder_name=folder_name)
+    save_coverage_file(flow, x_obs, true_params, inference_data,
+                       folder_name)
 
 
 if __name__ == '__main__':

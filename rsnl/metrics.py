@@ -8,14 +8,40 @@ import matplotlib.pyplot as plt
 from numpyro.infer import MCMC
 import pickle as pkl
 
-def adj_param_test():
-    pass
 
+def save_coverage_file(flow, x_obs, true_param, inference_data,
+                       folder_name=""):
+    """Save coverage file."""
+    log_prob_true_theta = flow.log_prob(x_obs, true_param)
+    theta_draws = inference_data.posterior.theta.values
+    theta_draws = jnp.concatenate(theta_draws, axis=0)  # axis-0 chains
+    log_prob_approx_thetas = flow.log_prob(x_obs,
+                                           theta_draws)
+    sort_idx = jnp.argsort(log_prob_approx_thetas)[::-1]
+    log_prob_approx_thetas = log_prob_approx_thetas[sort_idx]
+    theta_draws = theta_draws[sort_idx]
+    N = theta_draws.shape[0]
+    empirical_coverage = [0]
+    coverage_levels = jnp.linspace(0.05, 0.95, 19)
+    # TODO
+    for coverage_level in coverage_levels:
+        coverage_index = round(coverage_level * N)
+        cut_off = log_prob_approx_thetas[coverage_index]
+        if cut_off < log_prob_true_theta:
+            empirical_coverage.append(1)
+        else:
+            empirical_coverage.append(0)
+    empirical_coverage.append(1)
+    save_file = f'{folder_name}coverage.txt'
+    with open(save_file, 'wb') as f:
+        for val in empirical_coverage:
+            f.write(f"{str(val)}\n".encode('utf-8'))
+    return
 
 def log_prob_at_true_param(x_obs, true_param, prior, flow):
     """Calculate log prob at true param."""
     # TODO: at true param calc. flow and prior
-
+    pass
 
 def plot_and_save_coverage(empirical_coverage, folder_name=""):
     """Plot coverage."""

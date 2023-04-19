@@ -5,30 +5,32 @@ import jax.numpy as jnp
 from jax import random
 import argparse
 import arviz as az  # type: ignore
-import multiprocessing as mp
-import numpyro  # type: ignore
 import os
 import pickle as pkl
 from rsnl.inference import run_rsnl
 from rsnl.examples.misspec_ma1 import (get_prior, assumed_dgp,
-                                       calculate_summary_statistics)
+                                       calculate_summary_statistics,
+                                       true_dgp)
 from rsnl.visualisations import plot_and_save_all
 from rsnl.model import get_robust_model
-from rsnl.metrics import calculate_metrics
+from rsnl.metrics import save_coverage_file
+
 
 def run_misspec_ma1_inference(args):
     """Script to run the full inference task on misspec MA(1) example."""
     seed = args.seed
-    folder_name = "res/misspec_ma1/seed_{}/".format(seed)
+    folder_name = "res/misspec_ma1/rsnl/seed_{}/".format(seed)
 
     model = get_robust_model
     prior = get_prior()
     rng_key = random.PRNGKey(seed)
+    rng_key, sub_key = random.split(rng_key)
     sim_fn = assumed_dgp
     sum_fn = calculate_summary_statistics
     pseudo_true_param = jnp.array([0.0])
-    # x_obs = true_dgp(true_params)
-    x_obs = jnp.array([0.01, 0])
+    x_obs = true_dgp(key=sub_key)
+    x_obs = calculate_summary_statistics(x_obs)
+    # x_obs = jnp.array([0.01, 0])
     mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                           jax_parallelise=True, true_params=pseudo_true_param)
     mcmc.print_summary()
@@ -45,10 +47,9 @@ def run_misspec_ma1_inference(args):
 
     plot_and_save_all(inference_data, pseudo_true_param,
                       folder_name=folder_name)
-    # TODO: METRICS
-    # true_posterior = "res/true_posterior_samples/misspec_ma1/true_posterior_samples.pkl"
-    # calculate_metrics(x_obs, inference_data, prior, flow,
-    #                   true_posterior, folder_name=folder_name)
+
+    save_coverage_file(flow, x_obs, pseudo_true_param, inference_data,
+                       folder_name)
 
 
 if __name__ == '__main__':

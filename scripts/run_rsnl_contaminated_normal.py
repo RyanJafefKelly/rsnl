@@ -9,7 +9,7 @@ import multiprocessing as mp
 import numpyro  # type: ignore
 import os
 import pickle as pkl
-from rsnl.metrics import calculate_metrics
+from rsnl.metrics import save_coverage_file
 from rsnl.inference import run_rsnl
 from rsnl.examples.contaminated_normal import (get_prior, assumed_dgp,
                                                calculate_summary_statistics,
@@ -21,7 +21,7 @@ from rsnl.model import get_robust_model
 def run_contaminated_normal(args):
     """Script to run the full inference task on contaminated normal example."""
     seed = args.seed
-    folder_name = "res/contaminated_normal/seed_{}/".format(seed)
+    folder_name = "res/contaminated_normal/rsnl/seed_{}/".format(seed)
 
     model = get_robust_model
     prior = get_prior()
@@ -33,7 +33,7 @@ def run_contaminated_normal(args):
     true_params = prior.sample(sub_key1)
     x_obs_tmp = true_dgp(sub_key2, true_params)
     x_obs_tmp = calculate_summary_statistics(x_obs_tmp)
-    x_obs = jnp.array([x_obs_tmp[0], 2.0])
+    x_obs = jnp.array([x_obs_tmp[0], 2.0])  # add misspecefied summ. var.
     # x_obs = jnp.array([1.0, 2.0])
     mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                           jax_parallelise=True, true_params=true_params,
@@ -57,31 +57,8 @@ def run_contaminated_normal(args):
     plot_and_save_all(inference_data, true_params,
                       folder_name=folder_name)
     # log_prob  # TODO
-    log_prob_true_theta = flow.log_prob(x_obs, true_params)
-    theta_draws = inference_data.posterior.theta.values
-    theta_draws = jnp.concatenate(theta_draws, axis=0)
-    log_prob_approx_thetas = flow.log_prob(x_obs,
-                                           theta_draws)
-    sort_idx = jnp.argsort(log_prob_approx_thetas)[::-1]
-    log_prob_approx_thetas = log_prob_approx_thetas[sort_idx]
-    theta_draws = theta_draws[sort_idx]
-    N = theta_draws.shape[0]
-    empirical_coverage = [0]
-    # in top x...
-    coverage_levels = jnp.linspace(0.05, 0.95, 19)
-    # TODO
-    for coverage_level in coverage_levels:
-        coverage_index = round(coverage_level * N)
-        cut_off = log_prob_approx_thetas[coverage_index]
-        if cut_off < log_prob_true_theta:
-            empirical_coverage.append(1)
-        else:
-            empirical_coverage.append(0)
-    empirical_coverage.append(1)
-    save_file = f'{folder_name}coverage.txt'
-    with open(save_file, 'wb') as f:
-        for val in empirical_coverage:
-            f.write(f"{str(val)}\n".encode('utf-8'))
+    save_coverage_file(flow, x_obs, true_params, inference_data,
+                       folder_name)
 
 
 if __name__ == '__main__':

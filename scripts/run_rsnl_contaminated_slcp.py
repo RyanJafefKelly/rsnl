@@ -12,7 +12,7 @@ import pickle as pkl
 import arviz as az  # TODO: testing
 import matplotlib.pyplot as plt  # TODO: testing
 from rsnl.inference import run_rsnl
-from rsnl.metrics import calculate_metrics
+from rsnl.metrics import save_coverage_file
 from rsnl.examples.contaminated_slcp import (assumed_dgp, get_prior,
                                              calculate_summary_statistics,
                                              true_dgp,
@@ -24,7 +24,7 @@ from rsnl.model import get_robust_model
 def run_contaminated_slcp_inference(args):
     """Script to run the full inference task on contaminated SLCP example."""
     seed = args.seed
-    folder_name = "res/contaminated_slcp/seed_{}/".format(seed)
+    folder_name = "res/contaminated_slcp/rsnl/seed_{}/".format(seed)
 
     model = get_robust_model
     prior = get_prior()
@@ -56,10 +56,10 @@ def run_contaminated_slcp_inference(args):
     with open(f'{folder_name}adj_params.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.adj_params, f)
 
-    # calculate_metrics(x_obs, inference_data, prior, flow, true_posterior,
-    #                   folder_name=folder_name)
     plot_and_save_all(inference_data, true_params,
                       folder_name=folder_name)
+    save_coverage_file(flow, x_obs, true_params, inference_data,
+                       folder_name)
 
 
 if __name__ == '__main__':

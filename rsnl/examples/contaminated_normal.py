@@ -79,6 +79,6 @@ def true_posterior(x_obs: jnp.ndarray,
 
     true_post_var = (1/prior_var + n_obs/true_dgp_var) ** -1
     true_post_mu = (true_post_var *
-                    (prior.mean/prior_var + ( (obs_mean * n_obs)/ true_dgp_var)))
+                    (prior.mean/prior_var + ((obs_mean * n_obs) / true_dgp_var)))
     true_post_std = jnp.sqrt(true_post_var)
     return dist.Normal(true_post_mu, true_post_std)
