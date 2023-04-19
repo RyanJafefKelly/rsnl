@@ -1,6 +1,6 @@
 """Visualisation code for rsnl."""
 
-import jax.numpy as jnp
+# import jax.numpy as jnp
 import jax.random as random
 import arviz as az  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
@@ -8,6 +8,7 @@ import matplotlib.colors as mcolors  # type: ignore
 
 
 def plot_mcmc(inference_data, folder_name=""):
+    """Plot traceplots, ess plots and autocorrelation plots."""
     az.plot_trace(inference_data, var_names=['~x_adj'], compact=False)
     plt.savefig(f"{folder_name}traceplots.png")
     az.plot_ess(inference_data, var_names=['~x_adj'], kind="evolution")
@@ -17,8 +18,7 @@ def plot_mcmc(inference_data, folder_name=""):
 
 
 def plot_theta_posterior(inference_data, reference_values=None, folder_name=""):
-    # TODO: MULTIVARIATE
-    # TODO: LOOK NICE
+    """Plot the (joint) posterior distribution of theta."""
     thetas = inference_data.posterior.theta.values
     theta_dims = thetas.shape[-1]
     if theta_dims == 1:
@@ -32,15 +32,15 @@ def plot_theta_posterior(inference_data, reference_values=None, folder_name=""):
     else:
         theta_plot = {}
         var_name_map = {}
-        if reference_values is not None:
+        if reference_values is None:
             reference_values = {}
         for i in range(theta_dims):
-            theta_plot['theta_' + str(i+1)] = thetas[:, i]
+            theta_plot['theta_' + str(i+1)] = thetas[..., i].flatten()
         for ii, k in enumerate(theta_plot):
             # var_name_map[k] = fr'$\{k[:-1]}_{k[-1]}$'
             var_name_map[k] = 'theta_' + str(ii+1)  # TODO: for now...
             if reference_values is not None:
-                reference_values[var_name_map[k]] = reference_values[ii]  # why does ref_vals match labels and not data? ah well
+                reference_values[var_name_map[k]] = reference_values[k]  # why does ref_vals match labels and not data? ah well
         fig, axes = plt.subplots(theta_dims, theta_dims,
                                  sharey=False, figsize=(16, 16))
         axes = az.plot_pair(theta_plot,
@@ -66,6 +66,7 @@ def plot_theta_posterior(inference_data, reference_values=None, folder_name=""):
 
 
 def plot_adj_posterior(inference_data, folder_name=""):
+    """Plot the marginal posterior distribution of adj_params."""
     # plt.rcParams['text.usetex'] = True  # TODO: latex
     plt.rcParams.update({'font.size': 25})
 
@@ -77,7 +78,7 @@ def plot_adj_posterior(inference_data, folder_name=""):
     summary_dims = inference_data.posterior.adj_params.values.shape[-1]
     prior_samples = random.laplace(rng_key, shape=(10000, summary_dims))
     for i in range(summary_dims):  # TODO: lazy
-        az.plot_dist(inference_data.posterior.adj_params.values[:, i].flatten(),  # TODO: CHANGED
+        az.plot_dist(inference_data.posterior.adj_params.values[..., i].flatten(),  # TODO: CHANGED
                      label='Posterior',
                      color='black')
         az.plot_dist(prior_samples[:, i],
@@ -97,6 +98,7 @@ def plot_adj_posterior(inference_data, folder_name=""):
 
 
 def plot_and_save_all(inference_data, true_params, folder_name=""):
+    """Save all plots to folder_name."""
     theta_plot = {}
     var_name_map = {}
     # adj_plot = {}
@@ -124,5 +126,6 @@ def plot_and_save_all(inference_data, true_params, folder_name=""):
 
     plot_theta_posterior(inference_data, folder_name=folder_name,
                          reference_values=reference_values)
-    plot_adj_posterior(inference_data, folder_name=folder_name)
+    if hasattr(inference_data.posterior, 'adj_params'):
+        plot_adj_posterior(inference_data, folder_name=folder_name)
     plot_mcmc(inference_data, folder_name=folder_name)
