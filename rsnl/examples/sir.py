@@ -180,7 +180,7 @@ def weekend_lag(x, misspecify_multiplier=0.95):
 
 class CustomPrior(dist.Distribution):
     """Uniform with second draw conditioned on first."""
-    # NOTE: 
+    # NOTE:
     def __init__(self, low=0.0, high=1.0, validate_args=False):
         self.low, self.high = low, high
         event_shape = (2,)
@@ -239,9 +239,9 @@ class CustomPrior(dist.Distribution):
 
 def get_prior():
     """Return prior distribution for SIR example."""
-    # prior = CustomPrior(low=0.0, high=0.5)
-    prior = dist.Uniform(low=jnp.array([0.0, 0.0]),
-                         high=jnp.array([0.5, 0.5]))
+    prior = CustomPrior(low=0.0, high=0.5)
+    # prior = dist.Uniform(low=jnp.array([0.0, 0.0]),
+                        #  high=jnp.array([0.5, 0.5]))
     return prior
 
 
