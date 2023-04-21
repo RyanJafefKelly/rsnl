@@ -67,12 +67,12 @@ def run_rsnl(
     # numpyro.set_host_device_count(device_count)
     # hyperparameters
     # TODO: different approach than hardcode
-    num_rounds = 3
-    num_sims_per_round = 400  # NOTE: CHANGED FOR TESTING
-    num_final_posterior_samples = 1_000  # NOTE: CHANGED FOR TESTING
-    thinning = 10  # TODO! CHANGED FOR TESTING (was 10)
-    num_warmup = 1000  # TODO! CHANGED FOR TESTING (was 1000)
-    num_chains = 2
+    num_rounds = 10
+    num_sims_per_round = 1000  # NOTE: CHANGED FOR TESTING
+    num_final_posterior_samples = 10_000  # NOTE: CHANGED FOR TESTING
+    thinning = 10
+    num_warmup = 1000
+    num_chains = 4
     # num_devices = jax.local_device_count()
     summary_dims = len(x_obs)
     if true_params is not None:

@@ -30,11 +30,11 @@ def run_sir_inference(args):
     rng_key = random.PRNGKey(seed)
     sim_fn = assumed_dgp
     summ_fn = calculate_summary_statistics
+    rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
 
-    # true_params = prior.sample(rng_key)
-    true_params = jnp.array([.1, .15])  # NOTE: arranged [gamma, beta]
-    rng_key, sub_key = random.split(rng_key)
-    x_obs = true_dgp(sub_key, *true_params)
+    true_params = prior.sample(sub_key1)
+    # true_params = jnp.array([.1, .15])  # NOTE: arranged [gamma, beta]
+    x_obs = true_dgp(sub_key2, *true_params)
     plt.plot(x_obs)
     plt.savefig('visualise_observed_sir.png')
     x_obs = calculate_summary_statistics(x_obs)
@@ -54,9 +54,6 @@ def run_sir_inference(args):
         pkl.dump(inference_data.posterior.adj_params, f)
 
     plot_and_save_all(inference_data, true_params, folder_name=folder_name)
-    # TODO: TRUE DISTRIBUTION FOR SIR MODEL
-    # calculate_metrics(x_obs, inference_data, prior, flow, None,
-    #                   folder_name=folder_name)
     save_coverage_file(flow, x_obs, true_params, inference_data,
                        folder_name)
 
