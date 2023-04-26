@@ -10,13 +10,21 @@ import pickle as pkl
 
 
 def save_coverage_file(flow, x_obs, true_param, inference_data,
+                       prior, standardisation_params,
                        folder_name=""):
     """Save coverage file."""
-    log_prob_true_theta = flow.log_prob(x_obs, true_param)
-    theta_draws = inference_data.posterior.theta.values
+    theta_draws = inference_data.posterior.theta_standard.values
+    x_obs_standard = (x_obs - standardisation_params['x_sims_mean']) / standardisation_params['x_sims_std']
+    true_param_standard = (true_param - standardisation_params['theta_mean']) / standardisation_params['theta_std']
     theta_draws = jnp.concatenate(theta_draws, axis=0)  # axis-0 chains
-    log_prob_approx_thetas = flow.log_prob(x_obs,
-                                           theta_draws)
+    # theta_draws_standard = (theta_draws - standardisation_params['theta_mean']) / standardisation_params['theta_std']
+    log_prob_true_theta = flow.log_prob(x_obs_standard, true_param_standard)
+    log_prob_true_theta += prior.log_prob(true_param)
+    flow_log_prob_approx_thetas = flow.log_prob(x_obs_standard,
+                                                theta_draws
+                                                )
+    prior_log_prob = prior.log_prob(theta_draws)
+    log_prob_approx_thetas = flow_log_prob_approx_thetas + prior_log_prob
     sort_idx = jnp.argsort(log_prob_approx_thetas)[::-1]
     log_prob_approx_thetas = log_prob_approx_thetas[sort_idx]
     theta_draws = theta_draws[sort_idx]
