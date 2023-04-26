@@ -238,7 +238,7 @@ def run_rsnl(
              init_params=init_params,
              )
 
-    return mcmc, flow
+    return mcmc, flow, standardisation_params
 
 
 def run_snl(
@@ -255,12 +255,12 @@ def run_snl(
     """
     A SNL sampler
     """
-        # TODO: different approach than hardcode
-    num_rounds = 10
+    # TODO: different approach than hardcode
+    num_rounds = 3
     num_sims_per_round = 1000  # NOTE: CHANGED FOR TESTING
-    num_final_posterior_samples = 10_000  # NOTE: CHANGED FOR TESTING
-    thinning = 10  # TODO! CHANGED FOR TESTING (was 10)
-    num_warmup = 1000  # TODO! CHANGED FOR TESTING (was 1000)
+    num_final_posterior_samples = 1_000  # NOTE: CHANGED FOR TESTING
+    thinning = 10
+    num_warmup = 1000
     num_chains = 4
     # num_devices = jax.local_device_count()
     summary_dims = len(x_obs)
@@ -395,9 +395,9 @@ def run_snl(
                                 #    val_prop=0.2,  # NOTE: Changed
                                    )
 
-        # TODO: investigate smarter mass_matrix
+        # TODO? investigate smarter mass_matrix
 
-        # TODO: better standardisation...
+        # TODO? better standardisation...
 
         # TODO? Replace flow library
     # SAMPLE FINAL POSTERIOR
@@ -416,4 +416,5 @@ def run_snl(
              init_params=init_params,
              )
 
-    return mcmc, flow
+    # TODO: handle what tuple is returned better
+    return (mcmc, flow, standardisation_params)
