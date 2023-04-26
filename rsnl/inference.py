@@ -256,9 +256,9 @@ def run_snl(
     A SNL sampler
     """
     # TODO: different approach than hardcode
-    num_rounds = 3
+    num_rounds = 10
     num_sims_per_round = 1000  # NOTE: CHANGED FOR TESTING
-    num_final_posterior_samples = 1_000  # NOTE: CHANGED FOR TESTING
+    num_final_posterior_samples = 10_000  # NOTE: CHANGED FOR TESTING
     thinning = 10
     num_warmup = 1000
     num_chains = 4
