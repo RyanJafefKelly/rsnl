@@ -35,7 +35,7 @@ def run_contaminated_normal(args):
     x_obs_tmp = calculate_summary_statistics(x_obs_tmp)
     x_obs = jnp.array([x_obs_tmp[0], 2.0])  # add misspecefied summ. var.
     # x_obs = jnp.array([1.0, 2.0])
-    mcmc, flow = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
+    mcmc, flow, standardisation_params = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                           jax_parallelise=True, true_params=true_params,
                           theta_dims=1
                           )
@@ -58,7 +58,9 @@ def run_contaminated_normal(args):
                       folder_name=folder_name)
     # log_prob  # TODO
     save_coverage_file(flow, x_obs, true_params, inference_data,
+                       prior, standardisation_params,
                        folder_name)
+    # TODO: save log_prob of estimated posterior at true params
 
 
 if __name__ == '__main__':

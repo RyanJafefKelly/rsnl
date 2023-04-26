@@ -39,7 +39,7 @@ def run_sir_inference(args):
     plt.savefig('visualise_observed_sir.png')
     x_obs = calculate_summary_statistics(x_obs)
     print('x_obs: ', x_obs)
-    mcmc, flow = run_rsnl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
+    mcmc, flow, standardisation_params = run_rsnl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
                           jax_parallelise=False, true_params=true_params)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
@@ -55,6 +55,7 @@ def run_sir_inference(args):
 
     plot_and_save_all(inference_data, true_params, folder_name=folder_name)
     save_coverage_file(flow, x_obs, true_params, inference_data,
+                       prior, standardisation_params,
                        folder_name)
 
 

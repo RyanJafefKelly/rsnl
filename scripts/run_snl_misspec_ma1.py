@@ -33,7 +33,7 @@ def run_snl_misspec_ma1_inference(args):
     x_obs = true_dgp(key=sub_key)
     x_obs = calculate_summary_statistics(x_obs)
     # x_obs = jnp.array([0.01, 0])
-    mcmc, flow = run_snl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
+    mcmc, flow, standardisation_params = run_snl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                          jax_parallelise=True, true_params=pseudo_true_param)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
@@ -48,6 +48,7 @@ def run_snl_misspec_ma1_inference(args):
                       folder_name=folder_name)
 
     save_coverage_file(flow, x_obs, pseudo_true_param, inference_data,
+                       prior, standardisation_params,
                        folder_name)
 
 

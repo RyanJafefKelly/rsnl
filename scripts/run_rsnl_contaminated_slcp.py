@@ -42,7 +42,7 @@ def run_contaminated_slcp_inference(args):
     # inference_data = az.from_numpyro(true_posterior_mcmc)
     # az.plot_pair(inference_data.posterior, kind='kde')
     # plot_theta_posterior(inference_data, true_params)
-    mcmc, flow = run_rsnl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
+    mcmc, flow, standardisation_params = run_rsnl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
                           true_params=true_params)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
@@ -59,6 +59,7 @@ def run_contaminated_slcp_inference(args):
     plot_and_save_all(inference_data, true_params,
                       folder_name=folder_name)
     save_coverage_file(flow, x_obs, true_params, inference_data,
+                       prior, standardisation_params,
                        folder_name)
 
 

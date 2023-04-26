@@ -29,13 +29,13 @@ def run_snl_contaminated_normal(args):
     rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
     sim_fn = assumed_dgp
     sum_fn = calculate_summary_statistics
-    # true_params = jnp.array([1.0])
-    true_params = prior.sample(sub_key1)
+    true_params = jnp.array([1.0])
+    # true_params = prior.sample(sub_key1)
     x_obs_tmp = true_dgp(sub_key2, true_params)
     x_obs_tmp = calculate_summary_statistics(x_obs_tmp)
     x_obs = jnp.array([x_obs_tmp[0], 2.0])  # add misspecified summ. var.
     # x_obs = jnp.array([1.0, 2.0])
-    mcmc, flow = run_snl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
+    mcmc, flow, standardisation_params = run_snl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                          jax_parallelise=True, true_params=true_params,
                          theta_dims=1
                          )
@@ -51,6 +51,7 @@ def run_snl_contaminated_normal(args):
     plot_and_save_all(inference_data, true_params,
                       folder_name=folder_name)
     save_coverage_file(flow, x_obs, true_params, inference_data,
+                       prior, standardisation_params,
                        folder_name)
 
 
