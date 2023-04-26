@@ -29,8 +29,8 @@ def run_contaminated_normal(args):
     rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
     sim_fn = assumed_dgp
     sum_fn = calculate_summary_statistics
-    # true_params = jnp.array([1.0])
-    true_params = prior.sample(sub_key1)
+    true_params = jnp.array([1.0])
+    # true_params = prior.sample(sub_key1)
     x_obs_tmp = true_dgp(sub_key2, true_params)
     x_obs_tmp = calculate_summary_statistics(x_obs_tmp)
     x_obs = jnp.array([x_obs_tmp[0], 2.0])  # add misspecefied summ. var.
