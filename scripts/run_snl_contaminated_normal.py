@@ -52,7 +52,7 @@ def run_snl_contaminated_normal(args):
                       folder_name=folder_name)
     save_coverage_file(flow, x_obs, true_params, inference_data,
                        prior, standardisation_params,
-                       folder_name)
+                       folder_name=folder_name)
 
 
 if __name__ == '__main__':

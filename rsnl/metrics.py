@@ -21,18 +21,20 @@ def save_coverage_file(flow, x_obs, true_param, inference_data,
     N = theta_draws.shape[0]
     theta_idx = np.random.choice(N, 1000, replace=False)
     theta_draws = theta_draws[theta_idx, :]
-    # theta_draws_standard = (theta_draws - standardisation_params['theta_mean']) / standardisation_params['theta_std']
     log_prob_true_theta = flow.log_prob(x_obs_standard, true_param_standard)
-    log_prob_true_theta += prior.log_prob(true_param)
-    if hasattr(log_prob_true_theta, 'shape'):
+    # TODO: EMERGENCY REMOVE
+    # log_prob_true_theta += prior.log_prob(true_param)
+    # log_prob_true_theta = float(log_prob_true_theta)
+    if hasattr(log_prob_true_theta, 'shape') and log_prob_true_theta.ndim > 0:
         log_prob_true_theta = log_prob_true_theta[0]
     flow_log_prob_approx_thetas = flow.log_prob(x_obs_standard,
                                                 theta_draws
                                                 )
-    prior_log_prob = jnp.squeeze(prior.log_prob(jnp.squeeze(theta_draws)))
-    if prior_log_prob.ndim == 2:  # TODO: really could handle this better
-        prior_log_prob = jnp.sum(prior_log_prob, axis=1)
-    log_prob_approx_thetas = flow_log_prob_approx_thetas + prior_log_prob
+    # TODO: EMERGENCY REMOVE
+    # prior_log_prob = jnp.squeeze(prior.log_prob(jnp.squeeze(theta_draws)))
+    # if prior_log_prob.ndim == 2:  # TODO: could handle this better...
+    #     prior_log_prob = jnp.sum(prior_log_prob, axis=1)
+    log_prob_approx_thetas = flow_log_prob_approx_thetas# + prior_log_prob
     sort_idx = jnp.argsort(log_prob_approx_thetas)[::-1]
     log_prob_approx_thetas = log_prob_approx_thetas[sort_idx]
     theta_draws = theta_draws[sort_idx]
