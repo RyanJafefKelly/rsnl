@@ -6,9 +6,11 @@ from jax import random
 import argparse
 import arviz as az  # type: ignore
 import multiprocessing as mp
+import numpy as np
 import numpyro  # type: ignore
 import os
 import pickle as pkl
+from scipy.stats import gaussian_kde
 from rsnl.metrics import save_coverage_file
 from rsnl.inference import run_rsnl
 from rsnl.examples.contaminated_normal import (get_prior, assumed_dgp,
@@ -35,10 +37,11 @@ def run_contaminated_normal(args):
     x_obs_tmp = calculate_summary_statistics(x_obs_tmp)
     x_obs = jnp.array([x_obs_tmp[0], 2.0])  # add misspecefied summ. var.
     # x_obs = jnp.array([1.0, 2.0])
-    mcmc, flow, standardisation_params = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
-                          jax_parallelise=True, true_params=true_params,
-                          theta_dims=1
-                          )
+    mcmc, flow, standardisation_params = run_rsnl(model, prior, sim_fn, sum_fn,
+                                                  rng_key, x_obs,
+                                                  jax_parallelise=True,
+                                                  true_params=true_params,
+                                                  theta_dims=1)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
     if not isExist:
@@ -56,7 +59,18 @@ def run_contaminated_normal(args):
     #                   folder_name=folder_name)
     plot_and_save_all(inference_data, true_params,
                       folder_name=folder_name)
-    # log_prob  # TODO
+
+    theta_draws = jnp.concatenate(inference_data.posterior.theta.values,
+                                  axis=0)
+    N = theta_draws.shape[0]
+    theta_idx = np.random.choice(N, 10000, replace=False)
+    theta_draws = theta_draws[theta_idx, :]
+    theta_draws = jnp.squeeze(theta_draws)
+    kde = gaussian_kde(theta_draws)
+    logpdf_res = kde.logpdf(true_params)
+    with open(f'{folder_name}logpdf_res.txt', 'wb') as f:
+        f.write(str(logpdf_res).encode('utf-8'))
+
     save_coverage_file(flow, x_obs, true_params, inference_data,
                        prior, standardisation_params,
                        folder_name)

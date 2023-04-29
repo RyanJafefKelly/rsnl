@@ -3,6 +3,7 @@
 import jax.numpy as jnp
 
 from jax import random
+import numpy as np
 import argparse
 import arviz as az  # type: ignore
 import multiprocessing as mp
@@ -16,6 +17,7 @@ from rsnl.examples.misspec_ma1 import (get_prior, assumed_dgp,
 from rsnl.visualisations import plot_and_save_all
 from rsnl.model import get_standard_model
 from rsnl.metrics import save_coverage_file
+from scipy.stats import gaussian_kde
 
 
 def run_snl_misspec_ma1_inference(args):
@@ -33,8 +35,10 @@ def run_snl_misspec_ma1_inference(args):
     x_obs = true_dgp(key=sub_key)
     x_obs = calculate_summary_statistics(x_obs)
     # x_obs = jnp.array([0.01, 0])
-    mcmc, flow, standardisation_params = run_snl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
-                         jax_parallelise=True, true_params=pseudo_true_param)
+    mcmc, flow, standardisation_params = run_snl(model, prior, sim_fn, sum_fn,
+                                                 rng_key, x_obs,
+                                                 jax_parallelise=True,
+                                                 true_params=pseudo_true_param)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
     if not isExist:
@@ -46,6 +50,17 @@ def run_snl_misspec_ma1_inference(args):
 
     plot_and_save_all(inference_data, pseudo_true_param,
                       folder_name=folder_name)
+
+    theta_draws = jnp.concatenate(inference_data.posterior.theta.values, axis=0)
+    N = theta_draws.shape[0]
+    theta_idx = np.random.choice(N, 1000, replace=False)
+    theta_draws = theta_draws[theta_idx, :]
+    theta_draws = jnp.squeeze(theta_draws)
+    kde = gaussian_kde(theta_draws)
+    logpdf_res = kde.logpdf(pseudo_true_param)
+    logpdf_res = float(logpdf_res)
+    with open(f'{folder_name}logpdf_res.txt', 'wb') as f:
+        f.write(str(logpdf_res).encode('utf-8'))
 
     save_coverage_file(flow, x_obs, pseudo_true_param, inference_data,
                        prior, standardisation_params,
