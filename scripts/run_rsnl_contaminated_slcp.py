@@ -64,11 +64,17 @@ def run_contaminated_slcp_inference(args):
     theta_draws = jnp.concatenate(inference_data.posterior.theta.values,
                                   axis=0)
     N = theta_draws.shape[0]
-    theta_idx = np.random.choice(N, 3000, replace=False)  # TODO: CHANGE BACK 10000
+    theta_idx = np.random.choice(N, 500, replace=False)  # TODO: CHANGE BACK 10000
     theta_draws = theta_draws[theta_idx, :]
     theta_draws = jnp.squeeze(theta_draws)
-    kde = gaussian_kde(theta_draws)
-    logpdf_res = kde.logpdf(true_params)
+    try:
+        # TODO: DEBUG
+        kde = gaussian_kde(theta_draws)
+        logpdf_res = kde.logpdf(true_params)
+        logpdf_res = float(logpdf_res)
+    except Exception as e:
+        print('Error: ', e)
+        logpdf_res = np.NaN
     with open(f'{folder_name}logpdf_res.txt', 'wb') as f:
         f.write(str(logpdf_res).encode('utf-8'))
 
