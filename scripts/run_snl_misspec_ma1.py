@@ -51,7 +51,8 @@ def run_snl_misspec_ma1_inference(args):
     plot_and_save_all(inference_data, pseudo_true_param,
                       folder_name=folder_name)
 
-    theta_draws = jnp.concatenate(inference_data.posterior.theta.values, axis=0)
+    theta_draws = jnp.concatenate(inference_data.posterior.theta.values,
+                                  axis=0)
     N = theta_draws.shape[0]
     theta_idx = np.random.choice(N, 1000, replace=False)
     theta_draws = theta_draws[theta_idx, :]

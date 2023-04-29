@@ -11,30 +11,39 @@ import pickle as pkl
 
 def save_coverage_file(flow, x_obs, true_param, inference_data,
                        prior, standardisation_params,
-                       folder_name=""):
+                       folder_name="",
+                       transpose_theta=False):
     """Save coverage file."""
+    theta_draws_raw = inference_data.posterior.theta.values
     theta_draws = inference_data.posterior.theta_standard.values
     x_obs_standard = (x_obs - standardisation_params['x_sims_mean']) / standardisation_params['x_sims_std']
     true_param_standard = (true_param - standardisation_params['theta_mean']) / standardisation_params['theta_std']
+    theta_draws_raw = jnp.concatenate(theta_draws_raw, axis=0)  # axis-0 chains
     theta_draws = jnp.concatenate(theta_draws, axis=0)  # axis-0 chains
     # NOTE: to Ease computation...only consider 1000 theta draws
     N = theta_draws.shape[0]
     theta_idx = np.random.choice(N, 1000, replace=False)
+    theta_draws_raw = theta_draws_raw[theta_idx, :]
     theta_draws = theta_draws[theta_idx, :]
     log_prob_true_theta = flow.log_prob(x_obs_standard, true_param_standard)
     # TODO: EMERGENCY REMOVE
-    # log_prob_true_theta += prior.log_prob(true_param)
-    # log_prob_true_theta = float(log_prob_true_theta)
-    if hasattr(log_prob_true_theta, 'shape') and log_prob_true_theta.ndim > 0:
-        log_prob_true_theta = log_prob_true_theta[0]
+    log_prob_true_theta += prior.log_prob(true_param)
+    try:
+        log_prob_true_theta = float(log_prob_true_theta)
+    except Exception:
+        log_prob_true_theta = float(log_prob_true_theta[0])
+    # if hasattr(log_prob_true_theta, 'shape') and log_prob_true_theta.ndim > 0:
+    #     log_prob_true_theta = log_prob_true_theta[0]
     flow_log_prob_approx_thetas = flow.log_prob(x_obs_standard,
                                                 theta_draws
                                                 )
-    # TODO: EMERGENCY REMOVE
-    # prior_log_prob = jnp.squeeze(prior.log_prob(jnp.squeeze(theta_draws)))
-    # if prior_log_prob.ndim == 2:  # TODO: could handle this better...
-    #     prior_log_prob = jnp.sum(prior_log_prob, axis=1)
-    log_prob_approx_thetas = flow_log_prob_approx_thetas# + prior_log_prob
+    # TODO: ROUGH FIX
+    if transpose_theta:
+        theta_draws_raw = jnp.transpose(theta_draws_raw)
+    prior_log_prob = jnp.squeeze(prior.log_prob(jnp.squeeze(theta_draws_raw)))
+    if prior_log_prob.ndim == 2:  # TODO: could handle this better...
+        prior_log_prob = jnp.sum(prior_log_prob, axis=1)
+    log_prob_approx_thetas = flow_log_prob_approx_thetas + prior_log_prob
     sort_idx = jnp.argsort(log_prob_approx_thetas)[::-1]
     log_prob_approx_thetas = log_prob_approx_thetas[sort_idx]
     theta_draws = theta_draws[sort_idx]

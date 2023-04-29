@@ -65,6 +65,7 @@ def run_snl_sir_inference(args):
     try:
         kde = gaussian_kde(theta_draws)
         logpdf_res = kde.logpdf(true_params)
+        logpdf_res = float(logpdf_res)
     except Exception as e:
         print('Error: ', e)
         logpdf_res = np.NaN

@@ -60,6 +60,7 @@ def run_snl_contaminated_normal(args):
     theta_draws = jnp.squeeze(theta_draws)
     kde = gaussian_kde(theta_draws)
     logpdf_res = kde.logpdf(true_params)
+    logpdf_res = float(logpdf_res)
     with open(f'{folder_name}logpdf_res.txt', 'wb') as f:
         f.write(str(logpdf_res).encode('utf-8'))
 
