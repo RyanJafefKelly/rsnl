@@ -6,11 +6,13 @@ from jax import random
 import arviz as az  # type: ignore
 import argparse
 import multiprocessing as mp
+import numpy as np
 import numpyro  # type: ignore
 import os
 import pickle as pkl
 import arviz as az  # TODO: testing
 import matplotlib.pyplot as plt  # TODO: testing
+from scipy.stats import gaussian_kde
 from rsnl.inference import run_snl
 from rsnl.metrics import save_coverage_file
 from rsnl.examples.contaminated_slcp import (assumed_dgp, get_prior,
@@ -42,8 +44,9 @@ def run_snl_contaminated_slcp_inference(args):
     # inference_data = az.from_numpyro(true_posterior_mcmc)
     # az.plot_pair(inference_data.posterior, kind='kde')
     # plot_theta_posterior(inference_data, true_params)
-    mcmc, flow, standardisation_params = run_snl(model, prior, sim_fn, summ_fn, rng_key, x_obs,
-                         true_params=true_params)
+    mcmc, flow, standardisation_params = run_snl(model, prior, sim_fn, summ_fn,
+                                                 rng_key, x_obs,
+                                                 true_params=true_params)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
     if not isExist:
@@ -55,6 +58,18 @@ def run_snl_contaminated_slcp_inference(args):
 
     plot_and_save_all(inference_data, true_params,
                       folder_name=folder_name)
+
+    theta_draws = jnp.concatenate(inference_data.posterior.theta.values,
+                                  axis=0)
+    N = theta_draws.shape[0]
+    theta_idx = np.random.choice(N, 3000, replace=False)  # TODO: CHANGE BACK 10000
+    theta_draws = theta_draws[theta_idx, :]
+    theta_draws = jnp.squeeze(theta_draws)
+    kde = gaussian_kde(theta_draws)
+    logpdf_res = kde.logpdf(true_params)
+    with open(f'{folder_name}logpdf_res.txt', 'wb') as f:
+        f.write(str(logpdf_res).encode('utf-8'))
+
     save_coverage_file(flow, x_obs, true_params, inference_data,
                        prior, standardisation_params,
                        folder_name)
