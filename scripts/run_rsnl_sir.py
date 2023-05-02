@@ -34,8 +34,8 @@ def run_sir_inference(args):
     summ_fn = calculate_summary_statistics
     rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
 
-    true_params = prior.sample(sub_key1)
-    # true_params = jnp.array([.1, .15])  # NOTE: arranged [gamma, beta]
+    # true_params = prior.sample(sub_key1)
+    true_params = jnp.array([.1, .15])  # NOTE: arranged [gamma, beta]
     x_obs = true_dgp(sub_key2, *true_params)
     plt.plot(x_obs)
     plt.savefig('visualise_observed_sir.png')
