@@ -9,29 +9,39 @@ from jax._src.prng import PRNGKeyArray  # for typing
 def true_dgp(key: PRNGKeyArray,
              t1: jnp.ndarray,
              stdev_err: float = 2.0,
-            #  batch_size: int = 1,
              n_obs: int = 100,
              ) -> jnp.ndarray:
-    """_summary_
+    """True DGP of the contaminated normal example.
+
+    Simulates a DGP with a mixture of two normal distributions,
+    where one distribution has a standard deviation of 1.0 (uncontaminated)
+    and the other has a a higher standard deviation (contaminated).
+    The mixture proportion is fixed at 80% uncontaminated and 20% contaminated.
+
 
     Args:
-        t1 (jnp.ndarray): _description_
-        y (jnp.ndarray): _description_
-        key (PRNGKeyArray): _description_
-        stdev_err (float, optional): _description_. Defaults to 2.0.
-        batch_size (int, optional): _description_. Defaults to 1.
-        n_obs (int, optional): _description_. Defaults to 100.
+        key (PRNGKeyArray): a PRNGKeyArray for reproducibility.
+        t1 (jnp.ndarray): theta, the mean of the normal distribution.
+        stdev_err (float, optional): The standard deviation of the
+                                     'contaminated' normal distribution.
+                                     Defaults to 2.0.
+        n_obs (int, optional): The number of observations to generate.
+                               Defaults to 100.
 
     Returns:
-        jnp.ndarray: _description_
+        jnp.ndarray: An array representing a random sample from the mixture
+                     distribution. Each element in the array is a draw from
+                     one of the two normal distributions,  with the mean
+                     determined by 't1' and the standard deviation determined
+                     by the mixture process.
     """
     w = 0.8  # i.e. 20% of samples are contaminated
     std_devs = random.choice(key,
                              jnp.array([1.0, stdev_err]),
-                             shape=(1, n_obs),  # NOTE: removed batch_size
+                             shape=(1, n_obs),
                              p=jnp.array([w, 1-w]))
     key, sub_key = random.split(key)
-    standard_y = dist.Normal(0, 1).sample(sub_key, sample_shape=(1,  # NOTE: removed batch_size
+    standard_y = dist.Normal(0, 1).sample(sub_key, sample_shape=(1,
                                                                  n_obs))
     y = (standard_y * std_devs) + t1
 
@@ -43,14 +53,14 @@ def assumed_dgp(key: PRNGKeyArray,
                 # batch_size: int = 1,
                 n_obs: int = 100) -> jnp.ndarray:
     """Assumed DGP - only considering mean."""
-    return dist.Normal(t1, 1).sample(key=key, sample_shape=(1, n_obs))  # NOTE: removed batch_size
+    return dist.Normal(t1, 1).sample(key=key, sample_shape=(1, n_obs))
 
 
-# @jit
 def calculate_summary_statistics(x):
     """Calculate summary statistics for contaminated normal example."""
     s0 = jnp.mean(x, axis=1)
-    s1 = jnp.var(x, axis=1, ddof=1)  # ddof ->  divisor used in the calculation is N - ddof
+    # NOTE: divisor used in the calculation is N - ddof
+    s1 = jnp.var(x, axis=1, ddof=1)
 
     return jnp.hstack((s0, s1))
 
