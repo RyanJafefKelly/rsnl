@@ -11,7 +11,6 @@ setup(name='rsnl',
       version='0.0.1',
       description='Package for RSNL algorithm for \
                    simulation-based inference',
-      long_description=(open('docs/description.rst').read()),
       url='https://github.com/RyanJafefKelly/rsnl',
       author='Ryan Kelly',
       author_email='ryan@kiiii.com',

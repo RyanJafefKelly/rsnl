@@ -29,8 +29,8 @@ coverage: ## check code coverage quickly with the default Python
 	PYTHONPATH=$$PYTHONPATH:. pytest --cov=rsnl
 
 install: clean ## install the package to the active Python's site-packages
-	pip install numpy
-	pip install -e . --use-pep517
+	python -m pip install numpy
+	python -m pip install -e . --use-pep517
 
 dev: install ## install the development requirements to the active Python's site-packages
 	pip install -r requirements-dev.txt
