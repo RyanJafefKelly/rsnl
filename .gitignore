@@ -133,3 +133,5 @@ dmypy.json
 *.pkl
 *.png
 res/*
+notebooks/plots/*
+.DS_Store
