@@ -5,8 +5,8 @@ import jax.random as random
 from jax._src.prng import PRNGKeyArray  # for typing
 import numpyro.distributions as dist  # type: ignore
 from typing import Optional
-from diffrax import (diffeqsolve, ControlTerm, Heun,
-                     MultiTerm, ODETerm, SaveAt, VirtualBrownianTree,
+from diffrax import (diffeqsolve, ControlTerm, Heun,  # type: ignore
+                     MultiTerm, ODETerm, SaveAt, VirtualBrownianTree,  # type: ignore
                      PIDController)  # type: ignore
 import jax.lax as lax
 from numpyro.distributions import constraints
