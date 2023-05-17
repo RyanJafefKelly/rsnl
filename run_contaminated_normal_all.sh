@@ -1,6 +1,6 @@
 #!/bin/bash -l
-max=100
+max=200
 for i in `seq 0 $max`
 do
-	qsub -V -v "seed=$(($i+100))" scripts/pbs_jobs/contaminated_normal.sh
+	qsub -V -v "seed=$i" scripts/pbs_jobs/contaminated_normal.sh
 done

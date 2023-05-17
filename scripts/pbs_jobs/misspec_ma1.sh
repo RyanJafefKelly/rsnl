@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #PBS -N misspec_ma1
-#PBS -l walltime=04:00:00
+#PBS -l walltime=03:00:00
 #PBS -l mem=8GB
 #PBS -l ncpus=1
 cd $PBS_O_WORKDIR

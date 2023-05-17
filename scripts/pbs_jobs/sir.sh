@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #PBS -N SIR
-#PBS -l walltime=72:00:00
-#PBS -l mem=16GB
+#PBS -l walltime=48:00:00
+#PBS -l mem=8GB
 #PBS -l ncpus=1
 #PBS -l cputype=6140
 cd $PBS_O_WORKDIR

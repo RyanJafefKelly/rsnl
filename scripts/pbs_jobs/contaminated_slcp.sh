@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #PBS -N contaminated_slcp
-#PBS -l walltime=12:00:00
+#PBS -l walltime=23:00:00
 #PBS -l mem=8GB
 #PBS -l ncpus=1
 cd $PBS_O_WORKDIR
