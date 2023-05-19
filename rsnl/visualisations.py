@@ -36,7 +36,7 @@ def plot_theta_posterior(inference_data, reference_values=None, folder_name=""):
         for i in range(theta_dims):
             theta_plot['theta_' + str(i+1)] = thetas[..., i].flatten()
         for ii, k in enumerate(theta_plot):
-            var_name_map[k] = 'theta_' + str(ii+1)  # TODO: for now...
+            var_name_map[k] = 'theta_' + str(ii+1)
             if reference_values is not None:
                 reference_values[var_name_map[k]] = reference_values[k]
         fig, axes = plt.subplots(theta_dims, theta_dims,
@@ -70,7 +70,7 @@ def plot_adj_posterior(inference_data, folder_name=""):
     summary_dims = inference_data.posterior.adj_params.values.shape[-1]
     prior_samples = random.laplace(rng_key, shape=(10000, summary_dims))
 
-    for i in range(summary_dims):  # TODO: lazy
+    for i in range(summary_dims):
         az.plot_dist(inference_data.posterior.adj_params.values[..., i].flatten(),
                      label='Posterior',
                      color='black')
