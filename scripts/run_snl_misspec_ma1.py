@@ -1,18 +1,19 @@
 """Run misspec MA(1) example."""
 
-import jax.numpy as jnp
-
-from jax import random
 import argparse
-import arviz as az  # type: ignore
 import os
 import pickle as pkl
-from rsnl.inference import run_snl
-from rsnl.examples.misspec_ma1 import (get_prior, assumed_dgp,
-                                       calculate_summary_statistics,
+
+import arviz as az  # type: ignore
+import jax.numpy as jnp
+from jax import random
+
+from rsnl.examples.misspec_ma1 import (assumed_dgp,
+                                       calculate_summary_statistics, get_prior,
                                        true_dgp)
-from rsnl.visualisations import plot_and_save_all
+from rsnl.inference import run_snl
 from rsnl.model import get_standard_model
+from rsnl.visualisations import plot_and_save_all
 
 
 def run_snl_misspec_ma1_inference(args):

@@ -1,17 +1,18 @@
 """Run SIR example."""
 
-import jax.numpy as jnp
-
-from jax import random
 import argparse
-import arviz as az  # type: ignore
 import os
 import pickle as pkl
+
+import arviz as az  # type: ignore
+import jax.numpy as jnp
+from jax import random
+
+from rsnl.examples.sir import (assumed_dgp, calculate_summary_statistics,
+                               get_prior, true_dgp)
 from rsnl.inference import run_rsnl
-from rsnl.examples.sir import (assumed_dgp, get_prior,
-                               calculate_summary_statistics, true_dgp)
-from rsnl.visualisations import plot_and_save_all
 from rsnl.model import get_robust_model
+from rsnl.visualisations import plot_and_save_all
 
 
 def run_sir_inference(args):

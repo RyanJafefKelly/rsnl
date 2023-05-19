@@ -1,9 +1,9 @@
 """Visualisation code for rsnl."""
 
-import jax.random as random
 import arviz as az  # type: ignore
-import matplotlib.pyplot as plt  # type: ignore
+import jax.random as random
 import matplotlib.colors as mcolors  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
 
 
 def plot_mcmc(inference_data, folder_name=""):

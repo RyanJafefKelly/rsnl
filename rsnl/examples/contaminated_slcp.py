@@ -1,8 +1,8 @@
 """Implementation of the simple likelihood complex posterior model."""
 
 import jax.numpy as jnp
-from jax._src.prng import PRNGKeyArray  # for typing
 import numpyro.distributions as dist  # type: ignore
+from jax._src.prng import PRNGKeyArray  # for typing
 
 
 def base_dgp(key: PRNGKeyArray,

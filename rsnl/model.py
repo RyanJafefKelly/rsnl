@@ -1,5 +1,6 @@
 """Numpyro model functions."""
 from typing import Optional
+
 import jax.numpy as jnp
 import numpyro  # type: ignore
 import numpyro.distributions as dist  # type: ignore

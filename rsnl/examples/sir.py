@@ -1,18 +1,19 @@
 """Implementation of the SIR model."""
 
+import gc
+import sys
+from typing import Optional
+
+import jax.lax as lax
 import jax.numpy as jnp
 import jax.random as random
-from jax._src.prng import PRNGKeyArray  # for typing
 import numpyro.distributions as dist  # type: ignore
-from typing import Optional
-from diffrax import (diffeqsolve, ControlTerm, Heun,  # type: ignore
-                     MultiTerm, ODETerm, SaveAt, VirtualBrownianTree,  # type: ignore
-                     PIDController)  # type: ignore
-import jax.lax as lax
-from numpyro.distributions import constraints
-import gc
 import psutil  # type: ignore
-import sys
+from diffrax import PIDController  # type: ignore
+from diffrax import (ControlTerm, Heun, MultiTerm, ODETerm,  # type: ignore
+                     SaveAt, VirtualBrownianTree, diffeqsolve)
+from jax._src.prng import PRNGKeyArray  # for typing
+from numpyro.distributions import constraints
 
 
 def clear_caches():

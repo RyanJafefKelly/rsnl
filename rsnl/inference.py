@@ -5,12 +5,12 @@ from typing import Callable, Optional
 import jax.numpy as jnp
 import jax.random as random
 import numpyro.distributions as dist  # type: ignore
-from jax._src.prng import PRNGKeyArray  # for typing
-from numpyro.infer import MCMC, NUTS  # type: ignore
-from flowjax.flows import CouplingFlow  # type: ignore
 from flowjax.bijections import RationalQuadraticSpline  # type: ignore
 from flowjax.distributions import StandardNormal  # type: ignore
+from flowjax.flows import CouplingFlow  # type: ignore
 from flowjax.train.data_fit import fit_to_data  # type: ignore
+from jax._src.prng import PRNGKeyArray  # for typing
+from numpyro.infer import MCMC, NUTS  # type: ignore
 
 from rsnl.utils import vmap_dgp
 

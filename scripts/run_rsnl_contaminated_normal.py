@@ -1,16 +1,17 @@
 """Run contaminated normal example with RSNL."""
 
-import jax.numpy as jnp
-
-from jax import random
 import argparse
-import arviz as az  # type: ignore
 import os
 import pickle as pkl
-from rsnl.inference import run_rsnl
-from rsnl.examples.contaminated_normal import (get_prior, assumed_dgp,
+
+import arviz as az  # type: ignore
+import jax.numpy as jnp
+from jax import random
+
+from rsnl.examples.contaminated_normal import (assumed_dgp,
                                                calculate_summary_statistics,
-                                               true_dgp)
+                                               get_prior, true_dgp)
+from rsnl.inference import run_rsnl
 from rsnl.model import get_robust_model
 from rsnl.visualisations import plot_and_save_all
 

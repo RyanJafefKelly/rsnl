@@ -1,17 +1,19 @@
 """Run contaminated SLCP example."""
-import jax.numpy as jnp
-
-from jax import random
-import arviz as az  # type: ignore
 import argparse
 import os
 import pickle as pkl
-from rsnl.inference import run_snl
-from rsnl.examples.contaminated_slcp import (assumed_dgp, get_prior,
-                                             calculate_summary_statistics)
-from rsnl.visualisations import plot_and_save_all
-from rsnl.model import get_standard_model
 from functools import partial
+
+import arviz as az  # type: ignore
+import jax.numpy as jnp
+from jax import random
+
+from rsnl.examples.contaminated_slcp import (assumed_dgp,
+                                             calculate_summary_statistics,
+                                             get_prior)
+from rsnl.inference import run_snl
+from rsnl.model import get_standard_model
+from rsnl.visualisations import plot_and_save_all
 
 
 def run_snl_contaminated_slcp_inference(args):
