@@ -1,5 +1,5 @@
 """Inference methods for RSNL."""
-
+import time
 from typing import Callable, Optional
 
 import jax.numpy as jnp
@@ -73,6 +73,11 @@ def run_rsnl(
 
     flow = None
 
+    # initialise times
+    mcmc_time = 0.0
+    sim_time = 0.0
+    flow_time = 0.0
+
     init_params = {
         'theta': init_thetas,
         'adj_params': jnp.repeat(
@@ -101,7 +106,7 @@ def run_rsnl(
         scale_adj_var = 0.3 * jnp.abs(x_obs_standard)
         if i == 0:
             scale_adj_var = None
-
+        tic = time.time()
         mcmc.run(sub_key1,
                  x_obs_standard,
                  prior,
@@ -110,7 +115,9 @@ def run_rsnl(
                  standardisation_params=standardisation_params,
                  init_params=init_params
                  )
-
+        toc = time.time()
+        mcmc_time += toc-tic
+        print(f'Round {i+1} MCMC took {toc-tic:.2f} seconds')
         # set init_params for next round MCMC to final round vals
         rng_key, sub_key = random.split(rng_key)
         rand_idx = random.randint(sub_key, (num_chains,), 0,
@@ -123,13 +130,16 @@ def run_rsnl(
 
         sim_keys = random.split(rng_key, len(thetas))
         x_sims = jnp.empty((0, summary_dims))
+        tic = time.time()
         if jax_parallelise:
             vmap_dgp_fn = vmap_dgp(sim_fn, sum_fn)
             x_sims = vmap_dgp_fn(thetas, sim_keys)
         else:
             x_sims = jnp.array([sum_fn(sim_fn(sim_key, *theta))
                                 for sim_key, theta in zip(sim_keys, thetas)])
-
+        toc = time.time()
+        sim_time += toc-tic
+        print(f'Round {i+1} simulations took {toc-tic:.2f} seconds')
         # remove any failed simulations
         valid_idx = [ii for ii, ssx in enumerate(x_sims) if ssx is not None]
         x_sims = jnp.array([ssx for ii, ssx in enumerate(x_sims) if ssx is not None])
@@ -162,6 +172,7 @@ def run_rsnl(
             nn_width=50
             )
 
+        tic = time.time()
         rng_key, sub_key = random.split(rng_key)
         flow, losses = fit_to_data(key=sub_key,
                                    dist=flow,
@@ -171,7 +182,11 @@ def run_rsnl(
                                    max_patience=20,
                                    batch_size=256
                                    )
+        toc = time.time()
+        flow_time += toc-tic
+        print(f'Round {i+1} flow training took {toc-tic:.2f} seconds')
     # Sample final posterior
+    tic = time.time()
     nuts_kernel = NUTS(model)
     mcmc = MCMC(nuts_kernel,
                 num_warmup=num_warmup,
@@ -188,6 +203,13 @@ def run_rsnl(
              scale_adj_var=scale_adj_var,
              init_params=init_params,
              )
+    toc = time.time()
+    mcmc_time += toc-tic
+    print(f'Final posterior MCMC took {toc-tic:.2f} seconds')
+
+    print(f'Total MCMC time: {mcmc_time:.2f} seconds')
+    print(f'Total simulation time: {sim_time:.2f} seconds')
+    print(f'Total flow training time: {flow_time:.2f} seconds')
 
     return mcmc
 
@@ -249,6 +271,11 @@ def run_snl(
 
     flow = None
 
+    # initialise times
+    mcmc_time = 0.0
+    sim_time = 0.0
+    flow_time = 0.0
+
     init_params = {
         'theta': init_thetas
         }
@@ -270,6 +297,7 @@ def run_snl(
                     thinning=thinning,
                     num_chains=num_chains)
         rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
+        tic = time.time()
         mcmc.run(sub_key1,
                  x_obs_standard,
                  prior,
@@ -277,7 +305,9 @@ def run_snl(
                  standardisation_params=standardisation_params,
                  init_params=init_params
                  )
-
+        toc = time.time()
+        mcmc_time += toc-tic
+        print(f'Round {i+1} MCMC took {toc-tic:.2f} seconds')
         # set init_params for next round MCMC to final round vals
         rng_key, sub_key = random.split(rng_key)
         rand_idx = random.randint(sub_key, (num_chains,), 0,
@@ -290,12 +320,17 @@ def run_snl(
 
         sim_keys = random.split(rng_key, len(thetas))
         x_sims = jnp.empty((0, summary_dims))
+        tic = time.time()
         if jax_parallelise:
             vmap_dgp_fn = vmap_dgp(sim_fn, sum_fn)
             x_sims = vmap_dgp_fn(thetas, sim_keys)
         else:
             x_sims = jnp.array([sum_fn(sim_fn(sim_key, *theta))
                                 for sim_key, theta in zip(sim_keys, thetas)])
+
+        toc = time.time()
+        sim_time += toc-tic
+        print(f'Round {i+1} simulations took {toc-tic:.2f} seconds')
 
         valid_idx = [ii for ii, ssx in enumerate(x_sims) if ssx is not None]
         x_sims = jnp.array([ssx for ii, ssx in enumerate(x_sims) if ssx is not None])
@@ -327,6 +362,7 @@ def run_snl(
             )
 
         rng_key, sub_key = random.split(rng_key)
+        tic = time.time()
         flow, losses = fit_to_data(key=sub_key,
                                    dist=flow,
                                    x=x_sims_all_standardised,
@@ -335,6 +371,8 @@ def run_snl(
                                    max_patience=20,
                                    batch_size=256,
                                    )
+        toc = time.time()
+        flow_time += toc-tic
 
     # Sample final posterior
     nuts_kernel = NUTS(model)
@@ -344,6 +382,7 @@ def run_snl(
                 thinning=1,
                 num_chains=num_chains)
     rng_key, sub_key = random.split(rng_key)
+    tic = time.time()
     mcmc.run(sub_key,
              x_obs_standard,
              prior,
@@ -351,5 +390,12 @@ def run_snl(
              standardisation_params=standardisation_params,
              init_params=init_params,
              )
+    toc = time.time()
+    mcmc_time += toc-tic
+    print(f'Final posterior MCMC took {toc-tic:.2f} seconds')
+
+    print(f'Total MCMC time: {mcmc_time:.2f} seconds')
+    print(f'Total simulation time: {sim_time:.2f} seconds')
+    print(f'Total flow training time: {flow_time:.2f} seconds')
 
     return mcmc
