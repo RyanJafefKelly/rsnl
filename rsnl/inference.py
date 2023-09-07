@@ -253,7 +253,7 @@ def run_snl(
     MCMC
         A NumPyro MCMC object containing the final posterior samples.
     """
-    num_rounds = 10
+    num_rounds = 5
     num_sims_per_round = 1000
     num_final_posterior_samples = 10_000
     thinning = 10

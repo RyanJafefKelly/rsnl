@@ -32,5 +32,10 @@ install: clean ## install the package to the active Python's site-packages
 	python -m pip install numpy
 	python -m pip install -e . --use-pep517
 
+install-apple: clean ## install the package to the active Python's site-packages
+	python -m pip install numpy
+	python -m pip install -r requirements-apple.txt
+
+
 dev: install ## install the development requirements to the active Python's site-packages
 	pip install -r requirements-dev.txt

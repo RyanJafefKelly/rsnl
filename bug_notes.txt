@@ -1,0 +1,3 @@
+- model is saved with dim=7, leading to self.nvars=7, and this is consistently used for k
+- there is (I believe) an off by 1 indexing error with pairs, at least when using k=6, you will get out-of-bounds index
+- found potential source of "infinities"/extremely large summary values (following is an example for summary 1): occurs in a few runs when both theta 1 and theta 2 have higher values (e.g. > 0.95)

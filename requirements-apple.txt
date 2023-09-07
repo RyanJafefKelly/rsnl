@@ -1,4 +1,6 @@
-jax>=0.2.0
+jax==0.4.11
+jaxlib==0.4.10
+jax-metal==0.0.2
 scipy>=0.19
 numpyro>=0.7.0
 flowjax>=0.0.1
