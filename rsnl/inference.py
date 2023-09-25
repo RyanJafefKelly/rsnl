@@ -11,6 +11,7 @@ from flowjax.flows import CouplingFlow  # type: ignore
 from flowjax.train.data_fit import fit_to_data  # type: ignore
 from jax._src.prng import PRNGKeyArray  # for typing
 from numpyro.infer import MCMC, NUTS  # type: ignore
+import pickle as pkl
 
 from rsnl.utils import vmap_dgp
 
@@ -253,7 +254,7 @@ def run_snl(
     MCMC
         A NumPyro MCMC object containing the final posterior samples.
     """
-    num_rounds = 5
+    num_rounds = 10
     num_sims_per_round = 1000
     num_final_posterior_samples = 10_000
     thinning = 10
@@ -338,6 +339,11 @@ def run_snl(
 
         x_sims_all = jnp.append(x_sims_all, x_sims.reshape(-1, summary_dims), axis=0)
         thetas_all = jnp.append(thetas_all, thetas, axis=0)
+
+        folder_name = ''
+        with open(f'{folder_name}thetas_training.pkl', 'wb') as f:
+            pkl.dump(thetas_all, f)
+
 
         # standardise simulated summaries
         standardisation_params['x_sims_mean'] = jnp.mean(x_sims_all, axis=0)

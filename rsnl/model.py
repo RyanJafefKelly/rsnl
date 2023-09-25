@@ -34,6 +34,7 @@ def get_robust_model(x_obs: jnp.ndarray,
     """Get robust numpyro model."""
     laplace_mean = jnp.zeros(len(x_obs))
     laplace_var = jnp.ones(len(x_obs))
+    # scale_adj_var = None  # TODO!!!!! PUT IN TEMP FOR TESTING
     if scale_adj_var is None:
         scale_adj_var = jnp.ones(len(x_obs))
     theta = numpyro.sample('theta', prior)

@@ -36,10 +36,16 @@ def run_rsnl_svar(args):
 
     # hardcode true params, x_obs
     true_params = jnp.array([0.5787, -0.1435, 0.8356, 0.7448, -0.6603, -0.2538, 0.1])
-    x_obs_data = true_dgp(sub_key2, true_params)
-    x_obs = calculate_summary_statistics(x_obs_data)
+    # x_obs_data = true_dgp(sub_key2, true_params)
+    # x_obs = calculate_summary_statistics(x_obs_data)
 
-    # x_obs = jnp.array([0.0063, -0.0018, 0.0315, 0.0304, -0.0084, -0.0039, 0.1442])
+    x_obs = jnp.array([0.0063, -0.0018, 0.0315, 0.0304, -0.0084, -0.0039, 0.1442])
+    # x_obs_all = np.empty((7, 1000))
+    # for i in range(1000):
+    #     rng_key, sub_key = random.split(rng_key)
+    #     x_obs_data = true_dgp(sub_key, true_params)
+    #     x_obs = calculate_summary_statistics(x_obs_data)
+    #     x_obs_all[:, i] = np.array(x_obs)
 
     mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                    jax_parallelise=False, true_params=true_params,
@@ -52,6 +58,9 @@ def run_rsnl_svar(args):
 
     with open(f'{folder_name}thetas.pkl', 'wb') as f:
         pkl.dump(inference_data.posterior.theta, f)
+
+    with open(f'{folder_name}adj_params.pkl', 'wb') as f:
+        pkl.dump(inference_data.posterior.adj_params, f)
 
     plot_and_save_all(inference_data, true_params,
                       folder_name=folder_name)

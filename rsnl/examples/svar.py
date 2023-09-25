@@ -29,13 +29,12 @@ def true_dgp(key: PRNGKeyArray,
 
     Y = np.zeros((num_dims, n_obs))
 
-    Y[:, 0] = np.random.multivariate_normal(np.zeros(num_dims),
-                                            sigma * np.eye(num_dims))
+    Y[:, 0] = np.random.normal(np.zeros(num_dims), sigma * np.ones(num_dims))
 
     for t in range(1, n_obs):
         # key, subkey = random.split(key)
-        Y[:, t] = np.matmul(X, Y[:, t-1]) + np.random.multivariate_normal(np.zeros(num_dims),
-                                                              sigma * np.eye(num_dims))
+        Y[:, t] = np.matmul(X, Y[:, t-1]) + np.random.normal(np.zeros(num_dims),
+                                                             sigma * np.ones(num_dims))
 
     return Y
 
@@ -54,8 +53,8 @@ def calculate_summary_statistics(Y: jnp.ndarray):
     # NOTE: Just choose poor summaries, so will learn these points are bad,
     #       and not use them. But magnitude of these values do not break
     #       the standardisation.
-    S = jnp.nan_to_num(S, nan=-50)
-    S = jnp.clip(S, a_min=-50, a_max=50)
+    S = jnp.nan_to_num(S, nan=-1)
+    S = jnp.clip(S, a_min=-1, a_max=1)
 
     return S
 
