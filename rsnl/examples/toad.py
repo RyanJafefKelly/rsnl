@@ -11,6 +11,7 @@ from jax._src.prng import PRNGKeyArray  # for typing
 import numpy as np
 import scipy.stats as ss
 
+
 def dgp(key: PRNGKeyArray,
         alpha: jnp.ndarray,
         gamma: jnp.ndarray,
@@ -27,11 +28,15 @@ def dgp(key: PRNGKeyArray,
     X = jnp.zeros((n_days, n_toads, batch_size))
 
     # NOTE: no levy_stable in jax?
-    random_state = np.random.RandomState(123)
-    step_gen = ss.levy_stable
-    step_gen.random_state = random_state
+    # random_state = np.random.RandomState(123)
+    # step_gen = ss.levy_stable
+    # step_gen.random_state = random_state
     alpha_np = np.array(alpha)
     gamma_np = np.array(gamma)
+    delta_x = ss.levy_stable.rvs(alpha_np, beta=0, scale=gamma_np,
+                                 size=(n_days, n_toads, batch_size))
+    delta_x = jnp.array(delta_x)
+
     for i in range(1, n_days):
         # Generate random uniform samples for returns
         key, subkey = random.split(key)
@@ -41,11 +46,8 @@ def dgp(key: PRNGKeyArray,
         # Generate step length from levy_stable distribution
         # key, subkey = random.split(key)
         # delta_x = dist.Stable(alpha, beta=0, scale=gamma).sample(subkey, sample_shape=(n_toads, batch_size))
-        delta_x = ss.levy_stable.rvs(alpha_np, beta=0, loc=0, scale=gamma_np,
-                                     size=(n_toads, batch_size))
-        delta_x = jnp.array(delta_x)
         # Calculate new positions for non-returning toads
-        X = X.at[i, non_ret].set(X[i-1, non_ret] + delta_x[non_ret])
+        X = X.at[i, non_ret].set(X[i-1, non_ret] + delta_x[i, non_ret])
 
         # Handle returning toads
         key, subkey = random.split(key)
@@ -60,6 +62,7 @@ def calculate_summary_statistics(X):
         calculate_summary_statistics_lag(X, lag)
         for lag in [1, 2, 4, 8]
     ], axis=1)
+    ssx = jnp.clip(ssx, -1e+5, 1e+5)  # NOTE: fix for some crazy results
     return ssx.flatten()
 
 
