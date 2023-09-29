@@ -20,7 +20,7 @@ from rsnl.visualisations import plot_and_save_all
 
 
 def get_real_xobs():
-    df = scipy.io.loadmat('examples/data/radio_converted.mat')['Y']
+    df = scipy.io.loadmat('rsnl/examples/data/radio_converted.mat')['Y']
     nan_idx = jnp.where(jnp.isnan(df))
     df = jnp.array(df)
 
