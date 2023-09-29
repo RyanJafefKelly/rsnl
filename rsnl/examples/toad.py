@@ -16,6 +16,7 @@ def dgp(key: PRNGKeyArray,
         alpha: jnp.ndarray,
         gamma: jnp.ndarray,
         p0: jnp.ndarray,
+        model: int = 1,
         n_toads: int = 66,
         n_days: int = 63,
         batch_size: int = 1
@@ -51,22 +52,30 @@ def dgp(key: PRNGKeyArray,
 
         # Handle returning toads
         key, subkey = random.split(key)
-        ind_refuge = random.choice(subkey, jnp.arange(i), shape=(n_toads, batch_size))
+        if model == 1:
+            ind_refuge = random.choice(subkey, jnp.arange(i), shape=(n_toads, batch_size))
+        if model == 2:
+            # xn - curr
+            if i > 2:
+                ind_refuge = jnp.argmin(jnp.abs(X[i-1, :] - X[:i-2, :]), axis=0)
+            else:
+                ind_refuge = jnp.zeros((n_toads, batch_size), dtype=int)
         X = X.at[i, ret].set(X[ind_refuge[ret], ret])
 
     return X
 
 
-def calculate_summary_statistics(X):
+def calculate_summary_statistics(X, real_data=False, nan_idx=None):
     ssx = jnp.concatenate([
-        calculate_summary_statistics_lag(X, lag)
+        calculate_summary_statistics_lag(X, lag, real_data=real_data, nan_idx=nan_idx)
         for lag in [1, 2, 4, 8]
     ], axis=1)
     ssx = jnp.clip(ssx, -1e+5, 1e+5)  # NOTE: fix for some crazy results
     return ssx.flatten()
 
 
-def calculate_summary_statistics_lag(X, lag, p=jnp.linspace(0, 1, 11), thd=10):
+def calculate_summary_statistics_lag(X, lag, p=jnp.linspace(0, 1, 11), thd=10,
+                                     real_data=False, nan_idx=None):
     """
     Compute summaries for toad model in JAX.
 
@@ -77,10 +86,32 @@ def calculate_summary_statistics_lag(X, lag, p=jnp.linspace(0, 1, 11), thd=10):
     Returns:
         A tensor of shape (batch_size, len(p) + 1).
     """
+    # TODO: add check here of X length...
 
+    # if day_count is not None:
+    #     toad_disp = []
+    #     for ii, day_i in enumerate(day_count):
+    #         toad_disp.append(X[:day_i, ii].flatten())
+    #     X = toad_disp
+    # if real_data:
+    if nan_idx is not None:
+        X = X.at[nan_idx].set(jnp.nan)
+        # for i
+        # idx = [ii for ii, toad_data in enumerate(X) if len(toad_data) > lag]
+        # abs_disp = jnp.array([])
+        # for ii, toad_data in enumerate(X):
+        #     if len(toad_data) > lag:
+        #         toad_data_np = jnp.array(toad_data)
+        #         disp_ii = toad_data_np[lag:] - toad_data_np[:-lag]
+        #         # disp_ii = disp.reshape(-1, disp.shape[-1])
+        #         abs_disp_ii = jnp.abs(disp_ii)
+        #         abs_disp = jnp.concatenate((abs_disp, abs_disp_ii), axis=0)
+        #         abs_disp = abs_disp.flatten()
+    # else:
     disp = X[lag:] - X[:-lag]
-    disp = disp.reshape(-1, disp.shape[-1])
+    # disp = disp.reshape(-1, disp.shape[-1])
     abs_disp = jnp.abs(disp)
+    abs_disp = abs_disp.flatten()
 
     ret = abs_disp < thd
     num_ret = jnp.sum(ret, axis=0)
@@ -91,7 +122,7 @@ def calculate_summary_statistics_lag(X, lag, p=jnp.linspace(0, 1, 11), thd=10):
     diff = jnp.diff(abs_noret_quantiles, axis=0)
     logdiff = jnp.log(jnp.maximum(diff, jnp.exp(-20)))
 
-    ssx = jnp.vstack((num_ret, abs_noret_median, logdiff))
+    ssx = jnp.vstack((num_ret, abs_noret_median, logdiff.reshape(-1, 1)))
     ssx = jnp.nan_to_num(ssx, nan=jnp.inf)
 
     return ssx.T
