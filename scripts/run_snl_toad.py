@@ -40,7 +40,7 @@ def run_snl_toad(args):
     rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
     sim_fn = partial(dgp, model=2)
     sum_fn = calculate_summary_statistics
-    true_params = jnp.array([1.7, 35.0, 0.6])
+    true_params = jnp.array([1.7, 45.0, 0.6])
     # true_params = prior.sample(sub_key1)
     # x_obs_tmp = dgp(sub_key2, *true_params)
     # x_obs = calculate_summary_statistics(x_obs_tmp)
@@ -48,7 +48,7 @@ def run_snl_toad(args):
     mcmc = run_snl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                    jax_parallelise=False, true_params=true_params,
                    theta_dims=3,
-                   num_sims_per_round=2000)
+                   num_sims_per_round=1000)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
     if not isExist:

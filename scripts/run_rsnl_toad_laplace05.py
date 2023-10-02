@@ -41,19 +41,18 @@ def run_rsnl_toad(args):
     rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
     sim_fn = partial(dgp, model=2)
     sum_fn = calculate_summary_statistics
-    true_params = jnp.array([1.7, 35.0, 0.6])  # TODO: NOT ACTUALLY "TRUE"
+    true_params = jnp.array([1.7, 45.0, 0.6])  # TODO: NOT ACTUALLY "TRUE"
     # # true_params = prior.sample(sub_key1)
     # x_obs_tmp = dgp(sub_key2, *true_params)
     # x_obs = calculate_summary_statistics(x_obs_tmp)
     x_obs, sum_fn = get_real_xobs()
-    ssy = scipy.io.loadmat('ssy.mat')['ssy']
-    print('diff: ', x_obs - ssy)
+
     scale_adj_var = 0.5*jnp.ones_like(x_obs)
     mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                     jax_parallelise=False,
                     true_params=true_params,
                     theta_dims=3,
-                    num_sims_per_round=300,
+                    num_sims_per_round=1000,
                     scale_adj_var=scale_adj_var)
     mcmc.print_summary()
     is_exist = os.path.exists(folder_name)
