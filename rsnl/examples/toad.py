@@ -56,8 +56,8 @@ def dgp(key: PRNGKeyArray,
             ind_refuge = random.choice(subkey, jnp.arange(i), shape=(n_toads, batch_size))
         if model == 2:
             # xn - curr
-            if i > 2:
-                ind_refuge = jnp.argmin(jnp.abs(X[i-1, :] - X[:i-2, :]), axis=0)
+            if i > 1:
+                ind_refuge = jnp.argmin(jnp.abs(X[i, :] - X[:i-1, :]), axis=0)
             else:
                 ind_refuge = jnp.zeros((n_toads, batch_size), dtype=int)
         X = X.at[i, ret].set(X[ind_refuge[ret], ret])
@@ -108,7 +108,7 @@ def calculate_summary_statistics_lag(X, lag, p=jnp.linspace(0, 1, 11), thd=10,
         #         abs_disp = jnp.concatenate((abs_disp, abs_disp_ii), axis=0)
         #         abs_disp = abs_disp.flatten()
     # else:
-    disp = X[lag:] - X[:-lag]
+    disp = X[lag:, :] - X[:-lag, :]
     # disp = disp.reshape(-1, disp.shape[-1])
     abs_disp = jnp.abs(disp)
     abs_disp = abs_disp.flatten()
@@ -117,6 +117,7 @@ def calculate_summary_statistics_lag(X, lag, p=jnp.linspace(0, 1, 11), thd=10,
     num_ret = jnp.sum(ret, axis=0)
 
     abs_disp = jnp.where(ret, jnp.nan, abs_disp)
+
     abs_noret_median = jnp.nanmedian(abs_disp, axis=0)
     abs_noret_quantiles = jnp.nanquantile(abs_disp, p, axis=0)
     diff = jnp.diff(abs_noret_quantiles, axis=0)

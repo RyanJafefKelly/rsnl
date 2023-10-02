@@ -46,7 +46,9 @@ def run_snl_toad(args):
     # x_obs = calculate_summary_statistics(x_obs_tmp)
     x_obs, sum_fn = get_real_xobs()
     mcmc = run_snl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
-                   jax_parallelise=False, true_params=true_params, theta_dims=1)
+                   jax_parallelise=False, true_params=true_params,
+                   theta_dims=3,
+                   num_sims_per_round=2000)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
     if not isExist:

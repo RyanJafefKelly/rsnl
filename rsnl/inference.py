@@ -24,7 +24,9 @@ def run_rsnl(
     x_obs: jnp.ndarray,
     jax_parallelise: bool = True,
     true_params: Optional[jnp.ndarray] = None,
-    theta_dims: Optional[int] = 1
+    theta_dims: Optional[int] = 1,
+    num_sims_per_round: Optional[int] = 1000,
+    scale_adj_var: Optional[float] = None
 ) -> MCMC:
     """Run inference to get samples from the RSNL approximate posterior.
 
@@ -103,9 +105,11 @@ def run_rsnl(
                     thinning=thinning,
                     num_chains=num_chains)
         rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
-        scale_adj_var = 0.3 * jnp.abs(x_obs_standard)
-        if i == 0:
-            scale_adj_var = None
+        if scale_adj_var is None:  # NOTE: i.e. this is the default behaviour
+            if i == 0:
+                scale_adj_var = jnp.ones(len(x_obs))
+            else:
+                scale_adj_var = 0.3 * jnp.abs(x_obs_standard)
         tic = time.time()
         mcmc.run(sub_key1,
                  x_obs_standard,
@@ -223,7 +227,8 @@ def run_snl(
     x_obs: jnp.ndarray,
     jax_parallelise=True,
     true_params: Optional[jnp.ndarray] = None,
-    theta_dims: Optional[int] = 1
+    theta_dims: Optional[int] = 1,
+    num_sims_per_round: Optional[int] = 1000
 ) -> MCMC:
     """Run inference to get samples from the RSNL approximate posterior.
 
@@ -254,7 +259,6 @@ def run_snl(
         A NumPyro MCMC object containing the final posterior samples.
     """
     num_rounds = 10
-    num_sims_per_round = 1000
     num_final_posterior_samples = 10_000
     thinning = 10
     num_warmup = 1000
