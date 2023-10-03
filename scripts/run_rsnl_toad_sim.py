@@ -34,7 +34,7 @@ def get_real_xobs():
 def run_rsnl_toad(args):
     """Script to run the full inference task on toad example."""
     seed = args.seed
-    folder_name = "res/toad/rsnl/seed_{}/".format(seed)
+    folder_name = "res/toad/rsnl_sim/seed_{}/".format(seed)
     model = get_robust_model
     prior = get_prior()
     rng_key = random.PRNGKey(seed)
@@ -43,9 +43,9 @@ def run_rsnl_toad(args):
     sum_fn = calculate_summary_statistics
     true_params = jnp.array([1.8, 45.0, 0.6])  # TODO: NOT ACTUALLY "TRUE"
     # # true_params = prior.sample(sub_key1)
-    # x_obs_tmp = dgp(sub_key2, *true_params)
-    # x_obs = calculate_summary_statistics(x_obs_tmp)
-    x_obs, sum_fn = get_real_xobs()
+    x_obs_tmp = dgp(sub_key2, *true_params)
+    x_obs = calculate_summary_statistics(x_obs_tmp)
+    # x_obs, sum_fn = get_real_xobs()
     mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                     jax_parallelise=True,
                     true_params=true_params,
