@@ -74,6 +74,7 @@ def run_rsnl(
     thetas_all = jnp.empty((0, theta_dims))
 
     flow = None
+    default_scale_adj_var = scale_adj_var  # TODO!! PUT THIS ON HPC
 
     # initialise times
     mcmc_time = 0.0
@@ -105,11 +106,13 @@ def run_rsnl(
                     thinning=thinning,
                     num_chains=num_chains)
         rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
-        if scale_adj_var is None:  # NOTE: i.e. this is the default behaviour
+        if default_scale_adj_var is None:  # NOTE: i.e. this is the default behaviour
             if i == 0:
                 scale_adj_var = jnp.ones(len(x_obs))
             else:
                 scale_adj_var = 0.3 * jnp.abs(x_obs_standard)
+        else:
+            scale_adj_var = default_scale_adj_var
         tic = time.time()
         mcmc.run(sub_key1,
                  x_obs_standard,
