@@ -21,7 +21,7 @@ from rsnl.visualisations import plot_and_save_all
 
 def get_real_xobs():
     df = scipy.io.loadmat('rsnl/examples/data/radio_converted.mat')['Y']
-    nan_idx = jnp.where(jnp.isnan(df))
+    nan_idx = jnp.isnan(df)
     df = jnp.array(df)
 
     x_obs = calculate_summary_statistics(df, real_data=True, nan_idx=nan_idx)
@@ -41,13 +41,13 @@ def run_rsnl_toad(args):
     rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
     sim_fn = partial(dgp, model=2)
     sum_fn = calculate_summary_statistics
-    true_params = jnp.array([1.7, 45.0, 0.6])  # TODO: NOT ACTUALLY "TRUE"
+    true_params = jnp.array([1.7, 35.0, 0.6])  # TODO: NOT ACTUALLY "TRUE"
     # # true_params = prior.sample(sub_key1)
     # x_obs_tmp = dgp(sub_key2, *true_params)
     # x_obs = calculate_summary_statistics(x_obs_tmp)
     x_obs, sum_fn = get_real_xobs()
     mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
-                    jax_parallelise=False,
+                    jax_parallelise=True,
                     true_params=true_params,
                     theta_dims=3,
                     num_sims_per_round=1000)
