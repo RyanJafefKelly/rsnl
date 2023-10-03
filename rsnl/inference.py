@@ -74,7 +74,7 @@ def run_rsnl(
     thetas_all = jnp.empty((0, theta_dims))
 
     flow = None
-    default_scale_adj_var = scale_adj_var  # TODO!! PUT THIS ON HPC
+    default_scale_adj_var = scale_adj_var
 
     # initialise times
     mcmc_time = 0.0
