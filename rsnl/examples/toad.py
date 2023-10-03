@@ -7,9 +7,34 @@ import jax.numpy as jnp
 import numpyro.distributions as dist  # type: ignore
 from jax import random
 from jax._src.prng import PRNGKeyArray  # for typing
+from jax import lax
 
 import numpy as np
 import scipy.stats as ss
+
+
+def levy_stable(key, alpha, gamma, size=None):
+    if size is None:
+        size = jnp.shape(alpha)
+
+    key1, key2, key3 = random.split(key, num=3)
+
+    # General case
+    u = random.uniform(key1, minval=-0.5*jnp.pi, maxval=0.5*jnp.pi, shape=size)
+    v = random.exponential(key2, shape=size)
+    t = jnp.sin(alpha * u) / (jnp.cos(u) ** (1 / alpha))
+    s = (jnp.cos((1 - alpha) * u) / v) ** ((1 - alpha) / alpha)
+    output = gamma * t * s
+
+    # Handle alpha == 1
+    # cauchy_sample = random.cauchy(key3, shape=size)
+    # output = jnp.where(alpha == 1, cauchy_sample, output)
+
+    # # Handle alpha == 2
+    # normal_sample = random.normal(key3, shape=size) * jnp.sqrt(2) * gamma
+    # output = jnp.where(alpha == 2, normal_sample, output)
+
+    return output
 
 
 def dgp(key: PRNGKeyArray,
@@ -20,7 +45,7 @@ def dgp(key: PRNGKeyArray,
         n_toads: int = 66,
         n_days: int = 63,
         batch_size: int = 1
-    ) -> jnp.ndarray:
+        ) -> jnp.ndarray:
     """Sample the movement of Fowler's toad species
 
     Returns:
@@ -28,27 +53,29 @@ def dgp(key: PRNGKeyArray,
     """
     X = jnp.zeros((n_days, n_toads, batch_size))
 
-    # NOTE: no levy_stable in jax?
-    # random_state = np.random.RandomState(123)
-    # step_gen = ss.levy_stable
-    # step_gen.random_state = random_state
-    alpha_np = np.array(alpha)
-    gamma_np = np.array(gamma)
-    delta_x = ss.levy_stable.rvs(alpha_np, beta=0, scale=gamma_np,
-                                 size=(n_days, n_toads, batch_size))
-    delta_x = jnp.array(delta_x)
+    # Generate step length from levy_stable distribution
+    delta_x = levy_stable(key, alpha, gamma, size=(n_days, n_toads, batch_size))
 
     for i in range(1, n_days):
         # Generate random uniform samples for returns
         key, subkey = random.split(key)
         ret = random.uniform(subkey, shape=(n_toads, batch_size)) < jnp.squeeze(p0)
-        non_ret = ~ret
 
-        # Generate step length from levy_stable distribution
-        # key, subkey = random.split(key)
-        # delta_x = dist.Stable(alpha, beta=0, scale=gamma).sample(subkey, sample_shape=(n_toads, batch_size))
+        # Indices where ret is True or False
+        # true_indices = jnp.where(ret)
+        # false_indices = jnp.where(~ret)
+
         # Calculate new positions for non-returning toads
-        X = X.at[i, non_ret].set(X[i-1, non_ret] + delta_x[i, non_ret])
+        # update_values = X[i-1, false_indices] + delta_x[i, false_indices]
+        # X = X.at[i, false_indices].set(update_values)
+
+
+        # Calculate new positions for non-returning toads
+        # delta_x = delta_x * jnp.array(non_ret, dtype=int)
+        # X = X.at[i, ~ret].set(X[i-1, ~ret] + delta_x[i, ~ret])
+        # Calculate new positions for all toads
+        new_positions = X[i-1, :] + delta_x[i, :]
+
 
         # Handle returning toads
         key, subkey = random.split(key)
@@ -57,10 +84,19 @@ def dgp(key: PRNGKeyArray,
         if model == 2:
             # xn - curr
             if i > 1:
-                ind_refuge = jnp.argmin(jnp.abs(X[i, :] - X[:i-1, :]), axis=0)
+                ind_refuge = jnp.argmin(jnp.abs(new_positions[i, :] - X[:i, :]), axis=0)
             else:
                 ind_refuge = jnp.zeros((n_toads, batch_size), dtype=int)
-        X = X.at[i, ret].set(X[ind_refuge[ret], ret])
+        # Extract previous positions for updating
+        update_values = X[ind_refuge, jnp.arange(n_toads)[:, None], :].reshape((-1, 1))
+
+        # Boolean mask, broadcasting to shape (66, 1)
+        ret_expanded = ret[:, :, None].reshape((-1, 1))
+
+        # Combine new_positions and update_values for final_positions
+        final_positions = jnp.where(ret_expanded, update_values, new_positions)
+
+        X = X.at[i, :, :].set(final_positions)
 
     return X
 
@@ -86,30 +122,11 @@ def calculate_summary_statistics_lag(X, lag, p=jnp.linspace(0, 1, 11), thd=10,
     Returns:
         A tensor of shape (batch_size, len(p) + 1).
     """
-    # TODO: add check here of X length...
-
-    # if day_count is not None:
-    #     toad_disp = []
-    #     for ii, day_i in enumerate(day_count):
-    #         toad_disp.append(X[:day_i, ii].flatten())
-    #     X = toad_disp
-    # if real_data:
     if nan_idx is not None:
         X = X.at[nan_idx].set(jnp.nan)
-        # for i
-        # idx = [ii for ii, toad_data in enumerate(X) if len(toad_data) > lag]
-        # abs_disp = jnp.array([])
-        # for ii, toad_data in enumerate(X):
-        #     if len(toad_data) > lag:
-        #         toad_data_np = jnp.array(toad_data)
-        #         disp_ii = toad_data_np[lag:] - toad_data_np[:-lag]
-        #         # disp_ii = disp.reshape(-1, disp.shape[-1])
-        #         abs_disp_ii = jnp.abs(disp_ii)
-        #         abs_disp = jnp.concatenate((abs_disp, abs_disp_ii), axis=0)
-        #         abs_disp = abs_disp.flatten()
-    # else:
+
     disp = X[lag:, :] - X[:-lag, :]
-    # disp = disp.reshape(-1, disp.shape[-1])
+
     abs_disp = jnp.abs(disp)
     abs_disp = abs_disp.flatten()
 
