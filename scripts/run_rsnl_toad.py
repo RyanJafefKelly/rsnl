@@ -34,6 +34,7 @@ def get_real_xobs():
 def run_rsnl_toad(args):
     """Script to run the full inference task on toad example."""
     seed = args.seed
+    seed = 1  # TODO!! TEMP
     folder_name = "res/toad/rsnl/seed_{}/".format(seed)
     model = get_robust_model
     prior = get_prior()
@@ -50,7 +51,7 @@ def run_rsnl_toad(args):
                     jax_parallelise=True,
                     true_params=true_params,
                     theta_dims=3,
-                    num_sims_per_round=1000)
+                    num_sims_per_round=5000)
     mcmc.print_summary()
     is_exist = os.path.exists(folder_name)
     if not is_exist:

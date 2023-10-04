@@ -84,17 +84,23 @@ def dgp(key: PRNGKeyArray,
         if model == 2:
             # xn - curr
             if i > 1:
-                ind_refuge = jnp.argmin(jnp.abs(new_positions[i, :] - X[:i, :]), axis=0)
+                ind_refuge = jnp.argmin(jnp.abs(new_positions - X[:i, :]), axis=0)
             else:
                 ind_refuge = jnp.zeros((n_toads, batch_size), dtype=int)
+        
+        # TODO! BELOW TWO LINES MOST SUSPECT
         # Extract previous positions for updating
-        update_values = X[ind_refuge, jnp.arange(n_toads)[:, None], :].reshape((-1, 1))
+        # TODO! LAZY 
+        update_values = jnp.zeros((n_toads, batch_size))
+        for j in range(batch_size):
+            update_values = update_values.at[:, j].set(X[ind_refuge[:, j], np.arange(n_toads), j].flatten())
+        # update_values = X[ind_refuge, jnp.arange(n_toads)[:, None], :].reshape((-1, batch_size))  # NOTE: batch size ?
 
         # Boolean mask, broadcasting to shape (66, 1)
-        ret_expanded = ret[:, :, None].reshape((-1, 1))
+        # ret_expanded = ret[:, :, None].reshape((-1, batch_size))  # NOTE: batch size ?
 
         # Combine new_positions and update_values for final_positions
-        final_positions = jnp.where(ret_expanded, update_values, new_positions)
+        final_positions = jnp.where(ret, update_values, new_positions)
 
         X = X.at[i, :, :].set(final_positions)
 

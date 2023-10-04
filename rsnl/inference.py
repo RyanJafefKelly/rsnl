@@ -58,7 +58,6 @@ def run_rsnl(
     """
     # Set hyperparameters
     num_rounds = 10
-    num_sims_per_round = 1000
     num_final_posterior_samples = 10_000
     thinning = 10
     num_warmup = 1000
