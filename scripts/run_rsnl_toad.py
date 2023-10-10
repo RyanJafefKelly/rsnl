@@ -19,22 +19,23 @@ from rsnl.model import get_robust_model
 from rsnl.visualisations import plot_and_save_all
 
 
-def get_real_xobs():
+def get_real_xobs(lags=[1,2,4,8]):
     df = scipy.io.loadmat('rsnl/examples/data/radio_converted.mat')['Y']
     nan_idx = jnp.isnan(df)
     df = jnp.array(df)
 
-    x_obs = calculate_summary_statistics(df, real_data=True, nan_idx=nan_idx)
+    x_obs = calculate_summary_statistics(df, real_data=True, nan_idx=nan_idx, lags=lags)
 
-    sum_fn = partial(calculate_summary_statistics, real_data=True,
-                     nan_idx=nan_idx)
+    sum_fn = partial(calculate_summary_statistics,
+                     real_data=True,
+                     nan_idx=nan_idx,
+                     lags=lags)
     return x_obs, sum_fn
 
 
 def run_rsnl_toad(args):
     """Script to run the full inference task on toad example."""
     seed = args.seed
-    seed = 1  # TODO!! TEMP
     folder_name = "res/toad/rsnl/seed_{}/".format(seed)
     model = get_robust_model
     prior = get_prior()
@@ -46,12 +47,14 @@ def run_rsnl_toad(args):
     # # true_params = prior.sample(sub_key1)
     # x_obs_tmp = dgp(sub_key2, *true_params)
     # x_obs = calculate_summary_statistics(x_obs_tmp)
+    # scale_adj_var = 0.1 * jnp.ones(48)
     x_obs, sum_fn = get_real_xobs()
     mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                     jax_parallelise=True,
                     true_params=true_params,
                     theta_dims=3,
-                    num_sims_per_round=5000)
+                    num_sims_per_round=1000,
+                    )
     mcmc.print_summary()
     is_exist = os.path.exists(folder_name)
     if not is_exist:
