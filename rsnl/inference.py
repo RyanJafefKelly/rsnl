@@ -26,7 +26,9 @@ def run_rsnl(
     true_params: Optional[jnp.ndarray] = None,
     theta_dims: Optional[int] = 1,
     num_sims_per_round: Optional[int] = 1000,
-    scale_adj_var: Optional[float] = None
+    scale_adj_var: Optional[float] = None,
+    scale_adj_var_x_obs: Optional[float] = 0.3,
+    target_accept_prob: Optional[float] = 0.8
 ) -> MCMC:
     """Run inference to get samples from the RSNL approximate posterior.
 
@@ -98,7 +100,7 @@ def run_rsnl(
     }
 
     for i in range(num_rounds):
-        nuts_kernel = NUTS(model)
+        nuts_kernel = NUTS(model, target_accept_prob=target_accept_prob)
         mcmc = MCMC(nuts_kernel,
                     num_warmup=num_warmup,
                     num_samples=round((num_sims_per_round*thinning)/num_chains),
@@ -109,7 +111,7 @@ def run_rsnl(
             if i == 0:
                 scale_adj_var = jnp.ones(len(x_obs))
             else:
-                scale_adj_var = 0.3 * jnp.abs(x_obs_standard)
+                scale_adj_var = scale_adj_var_x_obs * jnp.abs(x_obs_standard)
         else:
             scale_adj_var = default_scale_adj_var
         tic = time.time()
@@ -148,6 +150,8 @@ def run_rsnl(
         print(f'Round {i+1} simulations took {toc-tic:.2f} seconds')
         # remove any failed simulations
         valid_idx = [ii for ii, ssx in enumerate(x_sims) if ssx is not None]
+        # if clip_val is not None:
+        #     valid_idx = [ii for ii, ssx in enumerate(x_sims) if ii in valid_idx and jnp.all(ssx < clip_val)]
         x_sims = jnp.array([ssx for ii, ssx in enumerate(x_sims) if ssx is not None])
         thetas = thetas[valid_idx, :]
 
@@ -193,14 +197,20 @@ def run_rsnl(
         print(f'Round {i+1} flow training took {toc-tic:.2f} seconds')
     # Sample final posterior
     tic = time.time()
-    nuts_kernel = NUTS(model)
+    nuts_kernel = NUTS(model, target_accept_prob=target_accept_prob)
     mcmc = MCMC(nuts_kernel,
                 num_warmup=num_warmup,
                 num_samples=num_final_posterior_samples,
                 thinning=1,  # no need to thin for final posterior
                 num_chains=num_chains)
     rng_key, sub_key = random.split(rng_key)
-    scale_adj_var = 0.3 * jnp.abs(x_obs_standard)
+    if default_scale_adj_var is None:  # NOTE: i.e. this is the default behaviour
+        if i == 0:
+            scale_adj_var = jnp.ones(len(x_obs))
+        else:
+            scale_adj_var =  scale_adj_var_x_obs * jnp.abs(x_obs_standard)
+    else:
+        scale_adj_var = default_scale_adj_var
     mcmc.run(sub_key,
              x_obs_standard,
              prior,
