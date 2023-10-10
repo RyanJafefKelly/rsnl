@@ -7,10 +7,8 @@ import jax.numpy as jnp
 import numpyro.distributions as dist  # type: ignore
 from jax import random
 from jax._src.prng import PRNGKeyArray  # for typing
-from jax import lax
 
 import numpy as np
-import scipy.stats as ss
 
 
 def levy_stable(key, alpha, gamma, size=None):
@@ -27,12 +25,12 @@ def levy_stable(key, alpha, gamma, size=None):
     output = gamma * t * s
 
     # Handle alpha == 1
-    # cauchy_sample = random.cauchy(key3, shape=size)
-    # output = jnp.where(alpha == 1, cauchy_sample, output)
+    cauchy_sample = random.cauchy(key3, shape=size)
+    output = jnp.where(alpha == 1, cauchy_sample, output)
 
     # # Handle alpha == 2
-    # normal_sample = random.normal(key3, shape=size) * jnp.sqrt(2) * gamma
-    # output = jnp.where(alpha == 2, normal_sample, output)
+    normal_sample = random.normal(key3, shape=size) * jnp.sqrt(2) * gamma
+    output = jnp.where(alpha == 2, normal_sample, output)
 
     return output
 
@@ -61,21 +59,8 @@ def dgp(key: PRNGKeyArray,
         key, subkey = random.split(key)
         ret = random.uniform(subkey, shape=(n_toads, batch_size)) < jnp.squeeze(p0)
 
-        # Indices where ret is True or False
-        # true_indices = jnp.where(ret)
-        # false_indices = jnp.where(~ret)
-
-        # Calculate new positions for non-returning toads
-        # update_values = X[i-1, false_indices] + delta_x[i, false_indices]
-        # X = X.at[i, false_indices].set(update_values)
-
-
-        # Calculate new positions for non-returning toads
-        # delta_x = delta_x * jnp.array(non_ret, dtype=int)
-        # X = X.at[i, ~ret].set(X[i-1, ~ret] + delta_x[i, ~ret])
         # Calculate new positions for all toads
         new_positions = X[i-1, :] + delta_x[i, :]
-
 
         # Handle returning toads
         key, subkey = random.split(key)
@@ -87,17 +72,13 @@ def dgp(key: PRNGKeyArray,
                 ind_refuge = jnp.argmin(jnp.abs(new_positions - X[:i, :]), axis=0)
             else:
                 ind_refuge = jnp.zeros((n_toads, batch_size), dtype=int)
-        
-        # TODO! BELOW TWO LINES MOST SUSPECT
+
         # Extract previous positions for updating
-        # TODO! LAZY 
         update_values = jnp.zeros((n_toads, batch_size))
         for j in range(batch_size):
             update_values = update_values.at[:, j].set(X[ind_refuge[:, j], np.arange(n_toads), j].flatten())
-        # update_values = X[ind_refuge, jnp.arange(n_toads)[:, None], :].reshape((-1, batch_size))  # NOTE: batch size ?
 
         # Boolean mask, broadcasting to shape (66, 1)
-        # ret_expanded = ret[:, :, None].reshape((-1, batch_size))  # NOTE: batch size ?
 
         # Combine new_positions and update_values for final_positions
         final_positions = jnp.where(ret, update_values, new_positions)
@@ -107,12 +88,12 @@ def dgp(key: PRNGKeyArray,
     return X
 
 
-def calculate_summary_statistics(X, real_data=False, nan_idx=None):
+def calculate_summary_statistics(X, real_data=False, nan_idx=None, lags=[1, 2, 4, 8]):
     ssx = jnp.concatenate([
         calculate_summary_statistics_lag(X, lag, real_data=real_data, nan_idx=nan_idx)
-        for lag in [1, 2, 4, 8]
+        for lag in lags
     ], axis=1)
-    ssx = jnp.clip(ssx, -1e+5, 1e+5)  # NOTE: fix for some crazy results
+    ssx = jnp.clip(ssx, -1e+6, 1e+6)  # NOTE: fix for some extreme results
     return ssx.flatten()
 
 
