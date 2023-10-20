@@ -11,7 +11,7 @@ def true_dgp(key: PRNGKeyArray,
              stdev_err: float = 2.0,
              n_obs: int = 100,
              ) -> jnp.ndarray:
-    """True DGP of the contaminated normal example.
+    """Sample from the true DGP of the contaminated normal example.
 
     Simulates a DGP with a mixture of two normal distributions,
     where one distribution has a standard deviation of 1.0 (uncontaminated)

@@ -40,11 +40,17 @@ def run_rsnl_toad(args):
     rng_key = random.PRNGKey(seed)
     rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
     sim_fn = partial(dgp, model=2)
+    # NOTE: USING NANS IN SIM NOW
+    # x_obs = scipy.io.loadmat('rsnl/examples/data/data_toads_model2.mat')['X']
+    # # nan_idx = jnp.isnan(df)
+    # x_obs = calculate_summary_statistics(x_obs, real_data=True)
     sum_fn = calculate_summary_statistics
-    true_params = jnp.array([1.8, 45.0, 0.6])  # TODO: NOT ACTUALLY "TRUE"
+    # sum_fn = partial(calculate_summary_statistics, real_data=False,
+    #                  nan_idx=nan_idx)
+    true_params = jnp.array([1.8, 45.0, 0.6])
     # # true_params = prior.sample(sub_key1)
-    x_obs_tmp = dgp(sub_key2, *true_params)
-    x_obs = calculate_summary_statistics(x_obs_tmp)
+    x_obs_tmp = sim_fn(sub_key2, *true_params)
+    x_obs = sum_fn(x_obs_tmp)
     # x_obs, sum_fn = get_real_xobs()
     mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                     jax_parallelise=True,

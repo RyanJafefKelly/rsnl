@@ -208,7 +208,7 @@ def run_rsnl(
         if i == 0:
             scale_adj_var = jnp.ones(len(x_obs))
         else:
-            scale_adj_var =  scale_adj_var_x_obs * jnp.abs(x_obs_standard)
+            scale_adj_var = scale_adj_var_x_obs * jnp.abs(x_obs_standard)
     else:
         scale_adj_var = default_scale_adj_var
     mcmc.run(sub_key,

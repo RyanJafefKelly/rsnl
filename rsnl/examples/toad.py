@@ -7,18 +7,34 @@ import jax.numpy as jnp
 import numpyro.distributions as dist  # type: ignore
 from jax import random
 from jax._src.prng import PRNGKeyArray  # for typing
-
 import numpy as np
 
 
-def levy_stable(key, alpha, gamma, size=None):
+def levy_stable(key: PRNGKeyArray,
+                alpha: jnp.ndarray,
+                gamma: jnp.ndarray,
+                size=None):
+    """Sample from Levy-stable distribution.
+
+    Args:
+        key (PRNGKeyArray): a PRNGKeyArray for reproducibility.
+        alpha (jnp.ndarray): Stability parameter
+        gamma (jnp.ndarray): Scale parameter
+        size (tuple): Shape of output
+
+    Returns:
+        jnp.ndarray in shape `size`
+    """
     if size is None:
         size = jnp.shape(alpha)
 
     key1, key2, key3 = random.split(key, num=3)
 
     # General case
-    u = random.uniform(key1, minval=-0.5*jnp.pi, maxval=0.5*jnp.pi, shape=size)
+    u = random.uniform(key1,
+                       minval=-0.5*jnp.pi + 1e-5,  # stop floating point error
+                       maxval=0.5*jnp.pi - 1e-5,  # stop floating point error
+                       shape=size)
     v = random.exponential(key2, shape=size)
     t = jnp.sin(alpha * u) / (jnp.cos(u) ** (1 / alpha))
     s = (jnp.cos((1 - alpha) * u) / v) ** ((1 - alpha) / alpha)
@@ -44,7 +60,7 @@ def dgp(key: PRNGKeyArray,
         n_days: int = 63,
         batch_size: int = 1
         ) -> jnp.ndarray:
-    """Sample the movement of Fowler's toad species
+    """Sample the movement of Fowler's toad species.
 
     Returns:
         jnp.ndarray in shape (n_days x n_toads x batch_size)
@@ -78,8 +94,6 @@ def dgp(key: PRNGKeyArray,
         for j in range(batch_size):
             update_values = update_values.at[:, j].set(X[ind_refuge[:, j], np.arange(n_toads), j].flatten())
 
-        # Boolean mask, broadcasting to shape (66, 1)
-
         # Combine new_positions and update_values for final_positions
         final_positions = jnp.where(ret, update_values, new_positions)
 
@@ -89,6 +103,7 @@ def dgp(key: PRNGKeyArray,
 
 
 def calculate_summary_statistics(X, real_data=False, nan_idx=None, lags=[1, 2, 4, 8]):
+    """Calculate summary statistics for Marchand toad example."""
     ssx = jnp.concatenate([
         calculate_summary_statistics_lag(X, lag, real_data=real_data, nan_idx=nan_idx)
         for lag in lags
@@ -99,8 +114,7 @@ def calculate_summary_statistics(X, real_data=False, nan_idx=None, lags=[1, 2, 4
 
 def calculate_summary_statistics_lag(X, lag, p=jnp.linspace(0, 1, 11), thd=10,
                                      real_data=False, nan_idx=None):
-    """
-    Compute summaries for toad model in JAX.
+    """Calculate summary statistics for Marchand toad example.
 
     Args:
         X: Output from dgp function.
@@ -134,6 +148,7 @@ def calculate_summary_statistics_lag(X, lag, p=jnp.linspace(0, 1, 11), thd=10,
 
 
 def get_prior():
-    prior = dist.Uniform(low=jnp.array([1.0, 0.0, 0.0]),
-                         high=jnp.array([2.0, 100.0, 0.9]))
+    """Return prior for Marchand toad example."""
+    prior = dist.Uniform(low=jnp.array([1.0, 20.0, 0.4]),
+                         high=jnp.array([2.0, 70.0, 0.9]))
     return prior

@@ -19,7 +19,7 @@ from rsnl.visualisations import plot_and_save_all
 def run_contaminated_normal(args):
     """Script to run the full inference task on contaminated normal example."""
     seed = args.seed
-    folder_name = "res/contaminated_normal/rsnl/seed_{}/".format(seed)
+    folder_name = "res/contaminated_normal/rsnl/laplace05_v4_seed_{}/".format(seed)
 
     model = get_robust_model
     prior = get_prior()
@@ -31,11 +31,13 @@ def run_contaminated_normal(args):
     # true_params = prior.sample(sub_key1)
     x_obs_tmp = true_dgp(sub_key2, true_params)
     x_obs_tmp = calculate_summary_statistics(x_obs_tmp)
-    x_obs = jnp.array([1.0, 2.0])  # add misspecified summ. var.
+    x_obs = jnp.array([1.0, 4.0])  # add misspecified summ. var.
     # x_obs = jnp.array([1.0, 2.0])
+    scale_adj_var = 0.5*jnp.ones_like(x_obs)
     mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                     jax_parallelise=True, true_params=true_params,
-                    theta_dims=1)
+                    theta_dims=1,
+                    scale_adj_var=scale_adj_var)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
     if not isExist:

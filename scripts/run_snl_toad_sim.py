@@ -42,11 +42,12 @@ def run_snl_toad(args):
     sum_fn = calculate_summary_statistics
     true_params = jnp.array([1.8, 45.0, 0.6])
     # true_params = prior.sample(sub_key1)
-    x_obs_tmp = dgp(sub_key2, *true_params)
+    x_obs_tmp = sim_fn(sub_key2, *true_params)
     x_obs = calculate_summary_statistics(x_obs_tmp)
     # x_obs, sum_fn = get_real_xobs()
     mcmc = run_snl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
-                   jax_parallelise=True, true_params=true_params,
+                   jax_parallelise=True,
+                   true_params=true_params,
                    theta_dims=3,
                    num_sims_per_round=1000)
     mcmc.print_summary()

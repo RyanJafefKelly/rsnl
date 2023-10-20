@@ -1,5 +1,5 @@
 lint: ## check style with flake8
-	flake8 rsnl tests
+	flake8 rsnl
 
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 

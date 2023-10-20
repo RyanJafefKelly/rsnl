@@ -13,9 +13,7 @@ def base_dgp(key: PRNGKeyArray,
              t5: jnp.ndarray,
              num_draws: int = 5
              ):
-    """The standard DGP of the SLCP model (5 non-contaminated draws).
-
-    _summary_
+    """Sample from the SLCP model (5 non-contaminated draws).
 
     Args:
         key (PRNGKeyArray): a PRNGKeyArray for reproducibility
@@ -78,52 +76,3 @@ def get_prior():
     prior = dist.Uniform(low=jnp.repeat(-3.0, 5),
                          high=jnp.repeat(3.0, 5))
     return prior
-
-
-# def true_numpyro_model(x_obs, prior):
-#     """Return true posterior for contaminated SLCP example."""
-#     num_draws = 4
-#     x_obs = x_obs.reshape((num_draws, 2))
-#     u1 = numpyro.sample('u1', dist.Uniform(-3.0, 3.0))
-#     u2 = numpyro.sample('u2', dist.Uniform(-3.0, 3.0))
-#     u3 = numpyro.sample('u3', dist.Uniform(-3.0, 3.0))
-#     u4 = numpyro.sample('u4', dist.Uniform(-3.0, 3.0))
-#     u5 = numpyro.sample('u5', dist.Uniform(-3.0, 3.0))
-
-#     m_theta = jnp.array([u1, u2])
-#     s1 = u3 ** 2
-#     s2 = u4 ** 2
-#     rho = jnp.tanh(u5)
-#     cov_mat = jnp.array([[s1 ** 2, rho * s1 * s2],
-#                          [rho * s1 * s2, s2 ** 2]])
-
-#     with numpyro.plate("data", num_draws):
-#         numpyro.sample('x_obs', dist.MultivariateNormal(m_theta, cov_mat),
-#                        obs=x_obs)
-
-#     return
-
-
-# def true_posterior(x_obs: jnp.ndarray,
-#                    prior: dist.Distribution) -> jnp.ndarray:
-#     """Return true posterior for contaminated SLCP example.
-
-#     Args:
-#         x_obs (jnp.ndarray): _description_
-#         prior (dist.Distribution): _description_
-
-#     Returns:
-#         jnp.ndarray: _description_
-#     """
-#     # true_params = jnp.array([0.7, -2.9, -1.0, -0.9, 0.6])
-#     x_obs = x_obs[:8]  # remove contaminated draw
-#     model = true_numpyro_model
-#     nuts_kernel = NUTS(model)  # NOTE: increase target_accept_prob?
-#     mcmc = MCMC(nuts_kernel,
-#             num_warmup=10_000,
-#             num_samples=10_000,
-#             thinning=10,
-#             num_chains=128
-#             )
-
-#     return mcmc

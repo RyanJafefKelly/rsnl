@@ -1,7 +1,6 @@
-import os
 from io import open
 
-from setuptools import find_packages, setup
+from setuptools import setup
 
 with open('requirements.txt', 'r') as f:
     requirements = f.read().splitlines()

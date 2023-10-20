@@ -32,7 +32,7 @@ class FlowNumpyro(dist):
 def vmap_dgp(sim_fn, sum_fn):
     """Create a vmap-able function for a simulation and summary function."""
     def simulation_wrapper(params, key=None):
-        """Wrapper for simulation function."""
+        """Wrap simulation function."""
         x_sim = sim_fn(key, *params)
         sim_sum = sum_fn(x_sim)
         return sim_sum
