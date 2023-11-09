@@ -243,7 +243,7 @@ def run_snl(
     num_sims_per_round: Optional[int] = 1000,
     num_rounds: Optional[int] = 10
 ) -> MCMC:
-    """Run inference to get samples from the RSNL approximate posterior.
+    """Run inference to get samples from the SNL approximate posterior.
 
     Parameters
     ----------
@@ -415,3 +415,149 @@ def run_snl(
     print(f'Total flow training time: {flow_time:.2f} seconds')
 
     return mcmc
+
+
+def run_snp(
+    prior: dist.Distribution,
+    sim_fn: Callable,
+    sum_fn: Callable,
+    rng_key: PRNGKeyArray,
+    x_obs: jnp.ndarray,
+    jax_parallelise=True,
+    true_params: Optional[jnp.ndarray] = None,
+    theta_dims: Optional[int] = 1,
+    num_sims_per_round: Optional[int] = 1000,
+    num_rounds: Optional[int] = 10
+) -> MCMC:
+    """Run inference to get samples from the SNP approximate posterior.
+
+    Parameters
+    ----------
+    model : Callable
+        The target model for which the RSNL sampler will be run.
+    prior : dist.Distribution
+        The prior distribution for the model parameters.
+    sim_fn : Callable
+        The DGP function given the model parameters.
+    sum_fn : Callable
+        The summary function used for summarizing the simulated data.
+    rng_key : jnp.ndarray
+        The random number generator key.
+    x_obs : jnp.ndarray
+        The observed data for which the model will be fit.
+    jax_parallelise : bool, optional
+        Flag whether to parallelise computations using JAX. Defaults to True.
+    true_params : jnp.ndarray, optional
+        The true parameters of the model, used for reference if available.
+    theta_dims : int, optional
+        The number of dimensions in the parameter space. Defaults to 1.
+
+    Returns
+    -------
+    MCMC
+        A NumPyro MCMC object containing the final posterior samples.
+    """
+    num_final_posterior_samples = 10_000
+
+    summary_dims = len(x_obs)
+    if true_params is not None:
+        theta_dims = len(true_params)
+
+    x_sims_all = jnp.empty((0, summary_dims))
+    thetas_all = jnp.empty((0, theta_dims))
+
+    flow = None
+
+    # initialise times
+    sim_time = 0.0
+    flow_time = 0.0
+
+    x_obs_standard = x_obs
+
+    standardisation_params = {
+        'theta_mean': jnp.empty(theta_dims),
+        'theta_std': jnp.empty(theta_dims),
+        'x_sims_mean': jnp.empty(summary_dims),
+        'x_sims_std': jnp.empty(summary_dims)
+    }
+
+    for i in range(num_rounds):
+        rng_key, sub_key1, sub_key2 = random.split(rng_key, 3)
+        if i == 0:
+            thetas = prior.sample(sub_key1, (num_sims_per_round,))
+        else:
+            thetas_standard = flow.sample(sub_key1,
+                                 (num_sims_per_round,),
+                                 x_obs_standard)
+            thetas = thetas_standard * standardisation_params['theta_std'] + standardisation_params['theta_mean']
+
+        sim_keys = random.split(rng_key, len(thetas))
+        x_sims = jnp.empty((0, summary_dims))
+        tic = time.time()
+        if jax_parallelise:
+            vmap_dgp_fn = vmap_dgp(sim_fn, sum_fn)
+            x_sims = vmap_dgp_fn(thetas, sim_keys)
+        else:
+            x_sims = jnp.array([sum_fn(sim_fn(sim_key, *theta))
+                                for sim_key, theta in zip(sim_keys, thetas)])
+
+        toc = time.time()
+        sim_time += toc-tic
+        print(f'Round {i+1} simulations took {toc-tic:.2f} seconds')
+
+        valid_idx = [ii for ii, ssx in enumerate(x_sims) if ssx is not None]
+        x_sims = jnp.array([ssx for ii, ssx in enumerate(x_sims) if ssx is not None])
+        thetas = thetas[valid_idx, :]
+
+        x_sims_all = jnp.append(x_sims_all, x_sims.reshape(-1, summary_dims), axis=0)
+        thetas_all = jnp.append(thetas_all, thetas, axis=0)
+
+        # standardise simulated summaries
+        standardisation_params['x_sims_mean'] = jnp.mean(x_sims_all, axis=0)
+        standardisation_params['x_sims_std'] = jnp.std(x_sims_all, axis=0)
+        x_sims_all_standardised = (x_sims_all - standardisation_params['x_sims_mean']) / standardisation_params['x_sims_std']
+        x_obs_standard = (x_obs - standardisation_params['x_sims_mean']) / standardisation_params['x_sims_std']
+
+        # standardise parameters
+        standardisation_params['theta_mean'] = jnp.mean(thetas_all, axis=0)
+        standardisation_params['theta_std'] = jnp.std(thetas_all, axis=0)
+
+        thetas_all_standardised = (thetas_all - standardisation_params['theta_mean']) / standardisation_params['theta_std']
+
+        rng_key, sub_key = random.split(rng_key)
+
+        flow = CouplingFlow(
+            key=sub_key,
+            base_dist=StandardNormal((theta_dims,)),
+            transformer=RationalQuadraticSpline(knots=10, interval=5),  # 10 spline segments over [-5, 5].
+            cond_dim=len(x_obs.flatten()),
+            flow_layers=5,
+            nn_width=50
+            )
+
+        rng_key, sub_key = random.split(rng_key)
+        tic = time.time()
+        flow, losses = fit_to_data(key=sub_key,
+                                   dist=flow,
+                                   x=thetas_all_standardised,
+                                   condition=x_sims_all_standardised,
+                                   max_epochs=500,
+                                   max_patience=20,
+                                   batch_size=256,
+                                   )
+        toc = time.time()
+        flow_time += toc-tic
+
+    rng_key, sub_key = random.split(rng_key)
+    final_posterior_samples_standardised = flow.sample(
+        sub_key,
+        (num_final_posterior_samples,),
+        x_obs_standard
+    )
+
+    final_posterior_samples = final_posterior_samples_standardised * standardisation_params['theta_std'] + standardisation_params['theta_mean']
+
+    print(f'Total simulation time: {sim_time:.2f} seconds')
+    print(f'Total flow training time: {flow_time:.2f} seconds')
+
+    return final_posterior_samples
