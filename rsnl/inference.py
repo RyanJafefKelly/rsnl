@@ -27,6 +27,7 @@ def run_rsnl(
     theta_dims: Optional[int] = 1,
     num_sims_per_round: Optional[int] = 1000,
     num_rounds: Optional[int] = 10,
+    num_chains: Optional[int] = 4,
     scale_adj_var: Optional[float] = None,
     scale_adj_var_x_obs: Optional[float] = 0.3,
     target_accept_prob: Optional[float] = 0.8
@@ -63,7 +64,6 @@ def run_rsnl(
     num_final_posterior_samples = 10_000
     thinning = 10
     num_warmup = 1000
-    num_chains = 4
     summary_dims = len(x_obs)
     if true_params is not None:
         theta_dims = len(true_params)
@@ -241,7 +241,8 @@ def run_snl(
     true_params: Optional[jnp.ndarray] = None,
     theta_dims: Optional[int] = 1,
     num_sims_per_round: Optional[int] = 1000,
-    num_rounds: Optional[int] = 10
+    num_rounds: Optional[int] = 10,
+    num_chains: Optional[int] = 4,
 ) -> MCMC:
     """Run inference to get samples from the SNL approximate posterior.
 
@@ -274,7 +275,6 @@ def run_snl(
     num_final_posterior_samples = 10_000
     thinning = 10
     num_warmup = 1000
-    num_chains = 4
     summary_dims = len(x_obs)
     if true_params is not None:
         theta_dims = len(true_params)
