@@ -19,8 +19,11 @@ from rsnl.visualisations import plot_and_save_all
 def run_contaminated_normal(args):
     """Script to run the full inference task on contaminated normal example."""
     seed = args.seed
-    folder_name = "res/contaminated_normal/rsnl/seed_{}/".format(seed)
+    scale_adj_var_x_obs = args.scale_adj_var_x_obs
+    filename = args.filename
 
+    folder_name = "res/contaminated_normal/rsnl/seed_{}{}/".format(seed, filename)
+    print(f"folder_name: {folder_name}")
     model = get_robust_model
     prior = get_prior()
     rng_key = random.PRNGKey(seed)
@@ -35,6 +38,7 @@ def run_contaminated_normal(args):
     # x_obs = jnp.array([1.0, 2.0])
     mcmc = run_rsnl(model, prior, sim_fn, sum_fn, rng_key, x_obs,
                     jax_parallelise=True, true_params=true_params,
+                    scale_adj_var_x_obs=scale_adj_var_x_obs,
                     theta_dims=1)
     mcmc.print_summary()
     isExist = os.path.exists(folder_name)
@@ -59,6 +63,9 @@ if __name__ == '__main__':
         epilog='Example: python run_contaminated_normal.py'
         )
     parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--scale_adj_var_x_obs', type=float, default=0.3)
+    parser.add_argument('--filename', type=str, default='')
+
     args = parser.parse_args()
 
     run_contaminated_normal(args)
