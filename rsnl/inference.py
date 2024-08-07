@@ -148,6 +148,7 @@ def run_rsnl(
             # run simulations in parallel using multiprocessing
             with mp.Pool(processes=mp.cpu_count() - 1) as p:
                 x_sims = jnp.array(p.starmap(sim_fn, [(sim_key, *theta) for sim_key, theta in zip(sim_keys, thetas)]))
+                x_sims = jnp.array(p.starmap(sum_fn, [(x,) for x in x_sims]))
         else:
             x_sims = jnp.array([sum_fn(sim_fn(sim_key, *theta))
                                 for sim_key, theta in zip(sim_keys, thetas)])
