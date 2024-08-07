@@ -11,6 +11,7 @@ from flowjax.flows import CouplingFlow  # type: ignore
 from flowjax.train.data_fit import fit_to_data  # type: ignore
 from jax._src.prng import PRNGKeyArray  # for typing
 from numpyro.infer import MCMC, NUTS  # type: ignore
+import multiprocessing as mp
 
 from rsnl.utils import vmap_dgp
 
@@ -23,6 +24,7 @@ def run_rsnl(
     rng_key: PRNGKeyArray,
     x_obs: jnp.ndarray,
     jax_parallelise: bool = True,
+    mp_parallelise: bool = False,
     true_params: Optional[jnp.ndarray] = None,
     theta_dims: Optional[int] = 1,
     num_sims_per_round: Optional[int] = 1000,
@@ -142,6 +144,10 @@ def run_rsnl(
         if jax_parallelise:
             vmap_dgp_fn = vmap_dgp(sim_fn, sum_fn)
             x_sims = vmap_dgp_fn(thetas, sim_keys)
+        elif mp_parallelise:
+            # run simulations in parallel using multiprocessing
+            with mp.Pool(processes=mp.cpu_count() - 1) as p:
+                x_sims = jnp.array(p.starmap(sim_fn, [(sim_key, *theta) for sim_key, theta in zip(sim_keys, thetas)]))
         else:
             x_sims = jnp.array([sum_fn(sim_fn(sim_key, *theta))
                                 for sim_key, theta in zip(sim_keys, thetas)])
