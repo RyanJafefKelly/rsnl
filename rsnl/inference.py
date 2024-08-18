@@ -12,6 +12,7 @@ from flowjax.train.data_fit import fit_to_data  # type: ignore
 from jax._src.prng import PRNGKeyArray  # for typing
 from numpyro.infer import MCMC, NUTS  # type: ignore
 import multiprocessing as mp
+import pickle as pkl
 
 from rsnl.utils import vmap_dgp
 from rsnl.matlab_engine_manager import start_matlab_engine, stop_matlab_engine, engines
@@ -34,7 +35,9 @@ def run_rsnl(
     num_chains: Optional[int] = 4,
     scale_adj_var: Optional[float] = None,
     scale_adj_var_x_obs: Optional[float] = 0.3,
-    target_accept_prob: Optional[float] = 0.8
+    target_accept_prob: Optional[float] = 0.8,
+    save_each_round: Optional[bool] = False,
+    folder_name: Optional[str] = ''
 ) -> MCMC:
     """Run inference to get samples from the RSNL approximate posterior.
 
@@ -211,6 +214,14 @@ def run_rsnl(
         toc = time.time()
         flow_time += toc-tic
         print(f'Round {i+1} flow training took {toc-tic:.2f} seconds')
+
+        if save_each_round:
+            with open(f'{folder_name}thetas_all_round_{i+1}.pkl', 'wb') as f:
+                pkl.dump(thetas_all, f)
+            with open(f'{folder_name}x_sims_all_round_{i+1}.pkl', 'wb') as f:
+                pkl.dump(x_sims_all, f)
+
+
     # Sample final posterior
     tic = time.time()
     nuts_kernel = NUTS(model, target_accept_prob=target_accept_prob)
