@@ -14,8 +14,7 @@ from numpyro.infer import MCMC, NUTS  # type: ignore
 import multiprocessing as mp
 import pickle as pkl
 
-from rsnl.utils import vmap_dgp
-from rsnl.matlab_engine_manager import start_matlab_engine, stop_matlab_engine, engines
+from rsnl.utils import vmap_dgp, start_matlab_engine, stop_matlab_engine, engines
 
 
 def run_rsnl(
@@ -220,6 +219,9 @@ def run_rsnl(
                 pkl.dump(thetas_all, f)
             with open(f'{folder_name}x_sims_all_round_{i+1}.pkl', 'wb') as f:
                 pkl.dump(x_sims_all, f)
+            # TODO: save adj_params
+            with open(f'{folder_name}adj_params_round_{i+1}.pkl', 'wb') as f:
+                pkl.dump(mcmc.get_samples()['adj_params'], f)
 
 
     # Sample final posterior
